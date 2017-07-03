@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"strconv"
 	"time"
+	"strings"
 )
 
 //const apiBaseUri = `http://localhost:3000/bot`
@@ -142,17 +143,36 @@ func processUpdates() bool {
 	for _, upd := range updates.Result {
 		log.Println(`Handling update `, upd.UpdateId, `message`, upd.Message.MessageId)
 		log.Println(`>`, upd.Message.Text)
-		log.Println(`>`, `chatid`, upd.Message.Chat.Id, `text`, upd.Message.Text, `msgid`, upd.Message.MessageId)
 
-		msg := NewSendMessage(upd.Message.Chat.Id, upd.Message.Text, upd.Message.MessageId)
+		var text = upd.Message.Text
+		for _, ent := range upd.Message.Entities {
+			if ent.Type == `bot_command` {
+				cmd := upd.Message.Text[ent.Offset:ent.Offset + ent.Length]
+				log.Println(`Is bot command:`, cmd)
+
+				switch cmd {
+					case `/time`:
+						text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
+					case `/code`:
+						text = strings.TrimSpace(upd.Message.Text[ent.Offset + ent.Length + 1:])
+						text = "```\n" + text + "\n```"
+					default:
+						text = strings.TrimSpace(upd.Message.Text[ent.Offset + ent.Length + 1:])
+				}
+				log.Println(`Message changed to:`, text)
+			} else if !ent.allowedType() {
+				log.Println(`-- Warning! Unexpected MessageEntity type:`, ent.Type)
+			}
+		}
+
+		msg := NewSendMessage(upd.Message.Chat.Id, text/*, upd.Message.MessageId*/)
 
 		payload := url.Values{}
 		for name, value := range msg {
 			payload.Set(name, value)
 		}
 
-		url := getSendMessageUrl()
-		if _, ok := sendPostRequest(url, []byte(payload.Encode())); !ok {
+		if _, ok := sendPostRequest(getSendMessageUrl(), []byte(payload.Encode())); !ok {
 			log.Printf("Failed to send message: %s\n", payload)
 		}
 
