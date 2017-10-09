@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ var AuthKey string
 var updatesOffset uint32
 
 var botProfile struct {
-	Ok bool
+	Ok     bool
 	Result struct {
 		Id        uint32
 		FirstName string `json:"first_name"`
@@ -147,7 +148,7 @@ func processUpdates() bool {
 		var text = upd.Message.Text
 		for _, ent := range upd.Message.Entities {
 			if ent.Type == `bot_command` {
-				cmd := upd.Message.Text[ent.Offset:ent.Offset+ent.Length]
+				cmd := upd.Message.Text[ent.Offset : ent.Offset+ent.Length]
 				log.Println(`Is bot command:`, cmd)
 
 				switch cmd {
@@ -156,10 +157,32 @@ func processUpdates() bool {
 				case `/time`:
 					text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
 				case `/code`:
-					text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-					text = "```\n" + text + "\n```"
+					// fmt.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
+					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
+						text = `No input...`
+					} else {
+						text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+						text = "```\n" + text + "\n```"
+					}
+
+					// text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
+				case `/sh`:
+					query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+					text = "```\n$ " + query + "\n"
+
+					out, err := exec.Command(query).Output()
+					if err != nil {
+						out = []byte(`ERROR: ` + err.Error())
+					}
+
+					text += "\n" + string(out) + "\n```"
+
 				default:
-					text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+					if len(upd.Message.Text) > ent.Offset+ent.Length {
+						text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+					} else {
+						text = `Sorry, cannot process your command`
+					}
 				}
 				log.Println(`Message changed to:`, text)
 			} else if !ent.allowedType() {
