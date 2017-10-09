@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -157,7 +158,7 @@ func processUpdates() bool {
 				case `/time`:
 					text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
 				case `/code`:
-					// fmt.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
+					// log.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
 					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
 						text = `No input...`
 					} else {
@@ -172,7 +173,6 @@ func processUpdates() bool {
 
 					cmd := exec.Command(`/bin/bash`, `-c`, query)
 					cmd.Env = os.Environ()
-
 					out, err := cmd.Output()
 					if err != nil {
 						out = []byte(`ERROR: ` + err.Error())
@@ -223,7 +223,7 @@ func processRequests() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for sig := range c {
-			fmt.Printf(`Signal "%s" called`+"\n", sig)
+			log.Printf(`Signal "%s" called`+"\n", sig)
 			terminated = true
 		}
 	}()
@@ -239,19 +239,30 @@ func processRequests() {
 	}
 }
 
+var debug bool
+
 func main() {
-	if len(os.Args) <= 1 {
-		fmt.Println(`Auth key is not defined in list of args`)
+	flag.BoolVar(&debug, `debug`, false, `Enable debug mode`)
+	flag.Parse()
+
+	if debug {
+		fmt.Println(`Started in Debug mode...`)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
+
+	if len(flag.Args()) < 1 {
+		log.Println(`Auth key is not defined in list of args`)
 		os.Exit(1)
 	}
 
-	AuthKey = os.Args[1]
-	fmt.Println(`Echo bot started at`, time.Now().Format("2006-01-02 15:04:05"))
-	fmt.Println(`Used auth key:`, AuthKey)
+	AuthKey = flag.Arg(0)
+	log.Println(`Echo bot started at`, time.Now().Format("2006-01-02 15:04:05"))
+	log.Println(`Used auth key:`, AuthKey)
 
 	if checkConnection() {
 		processRequests()
 	}
 
-	fmt.Println(`Echo bot finished at`, time.Now().Format("2006-01-02 15:04:05"))
+	log.Println(`Echo bot finished at`, time.Now().Format("2006-01-02 15:04:05"))
 }
