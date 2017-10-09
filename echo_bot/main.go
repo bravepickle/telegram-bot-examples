@@ -170,7 +170,10 @@ func processUpdates() bool {
 					query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
 					text = "```\n$ " + query + "\n"
 
-					out, err := exec.Command(query).Output()
+					cmd := exec.Command(`/bin/bash`, `-c`, query)
+					cmd.Env = os.Environ()
+
+					out, err := cmd.Output()
 					if err != nil {
 						out = []byte(`ERROR: ` + err.Error())
 					}
