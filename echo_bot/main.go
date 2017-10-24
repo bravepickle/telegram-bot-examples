@@ -158,27 +158,29 @@ func processUpdates() bool {
 				case `/time`:
 					text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
 				case `/code`:
-					// log.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
 					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
-						text = `No input...`
+						text = `*ERROR:* No input...`
 					} else {
 						text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
 						text = "```\n" + text + "\n```"
 					}
-
-					// text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
 				case `/sh`:
-					query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-					text = "```\n$ " + query + "\n"
+					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
+						text = `*ERROR:* No input...`
+					} else {
+						query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+						text = "```\n$ " + query + "\n"
 
-					cmd := exec.Command(`/bin/bash`, `-c`, query)
-					cmd.Env = os.Environ()
-					out, err := cmd.Output()
-					if err != nil {
-						out = []byte(`ERROR: ` + err.Error())
+						cmd := exec.Command(`/bin/bash`, `-c`, query)
+						cmd.Env = os.Environ()
+						out, err := cmd.Output()
+						if err != nil {
+							out = []byte(`ERROR: ` + err.Error())
+						}
+
+						text += "\n" + string(out) + "\n```"
 					}
 
-					text += "\n" + string(out) + "\n```"
 
 				default:
 					if len(upd.Message.Text) > ent.Offset+ent.Length {
@@ -205,11 +207,8 @@ func processUpdates() bool {
 		}
 
 		sentOnceSuccessfully = true
-
 		if upd.UpdateId >= updatesOffset {
-			log.Printf(" --------- Was offset %d, will be: %d\n", updatesOffset, upd.UpdateId+1)
 			updatesOffset = upd.UpdateId + 1
-
 		}
 	}
 
