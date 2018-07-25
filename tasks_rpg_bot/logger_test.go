@@ -1,4 +1,4 @@
-package tasks_rpg_bot
+package main
 
 import (
 	"bytes"

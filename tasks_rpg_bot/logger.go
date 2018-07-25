@@ -1,9 +1,10 @@
-package tasks_rpg_bot
+package main
 
 import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 )
 
 // logs debug messages
@@ -71,9 +72,9 @@ func (l *Logger) Debug(msg string, params ...interface{}) {
 	}
 
 	if len(params) > 0 {
-		l.logStd.Printf(msg+"\n", params)
+		l.logStd.Printf(`DEBUG: `+msg+"\n", params)
 	} else {
-		l.logStd.Println(msg)
+		l.logStd.Println(`DEBUG: ` + msg)
 	}
 }
 
@@ -84,9 +85,9 @@ func (l *Logger) Info(msg string, params ...interface{}) {
 	}
 
 	if len(params) > 0 {
-		l.logStd.Printf(msg+"\n", params...)
+		l.logStd.Printf(`INFO: `+msg+"\n", params...)
 	} else {
-		l.logStd.Println(msg)
+		l.logStd.Println(`INFO: ` + msg)
 	}
 }
 
@@ -97,18 +98,18 @@ func (l *Logger) Error(msg string, params ...interface{}) {
 	}
 
 	if len(params) > 0 {
-		l.logErr.Printf(msg+"\n", params...)
+		l.logErr.Printf(`ERROR: `+msg+"\n", params...)
 	} else {
-		l.logErr.Println(msg)
+		l.logErr.Println(`ERROR: ` + msg)
 	}
 }
 
 // Info log fatal message and exit afterwards
 func (l *Logger) Fatal(msg string, params ...interface{}) {
 	if len(params) > 0 {
-		l.logErr.Fatalf(msg+"\n", params)
+		l.logErr.Fatalf(`FATAL: `+msg+"\n", params)
 	} else {
-		l.logErr.Fatalln(msg)
+		l.logErr.Fatalln(`FATAL: ` + msg)
 	}
 }
 
@@ -142,7 +143,7 @@ func NewLogger(config LoggerConfig) *Logger {
 func initLogErr(config *LoggerConfig, logger *Logger) {
 	var errFlag int
 	if config.LogErr.Writer == nil {
-		panic(`Error log output not defined`)
+		config.LogErr.Writer = os.Stderr
 	}
 	if config.LogErr.Flag == 0 {
 		errFlag = log.LstdFlags
@@ -153,7 +154,7 @@ func initLogErr(config *LoggerConfig, logger *Logger) {
 func initLogStd(config *LoggerConfig, logger *Logger) {
 	var stdFlag int
 	if config.LogStd.Writer == nil {
-		panic(`Standard log output not defined`)
+		config.LogStd.Writer = os.Stdout
 	}
 	if config.LogStd.Flag == 0 {
 		stdFlag = log.LstdFlags
