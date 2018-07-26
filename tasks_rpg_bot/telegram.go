@@ -190,7 +190,7 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 	for _, upd := range updates.Result {
 		logger.Info(`Handling update `, upd.UpdateId, `message`, upd.Message.MessageId)
-		logger.Debug(`>`, upd.Message.Text)
+		logger.Debug(`> %s`, upd.Message.Text)
 
 		var text = upd.Message.Text
 		for _, ent := range upd.Message.Entities {
