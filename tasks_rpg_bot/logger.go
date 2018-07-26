@@ -73,14 +73,16 @@ func (l *Logger) Debug(msg string, params ...interface{}) {
 		return // do not log
 	}
 
+	msg = `DEBUG: ` + msg
+
 	if l.colorizer != nil {
 		msg = l.colorizer.Wrap(msg, `debug`)
 	}
 
 	if len(params) > 0 {
-		l.logStd.Printf(`DEBUG: `+msg+"\n", params)
+		l.logStd.Printf(msg+"\n", params)
 	} else {
-		l.logStd.Println(`DEBUG: ` + msg)
+		l.logStd.Println(msg)
 	}
 }
 
@@ -90,14 +92,16 @@ func (l *Logger) Info(msg string, params ...interface{}) {
 		return // do not log
 	}
 
+	msg = `INFO: ` + msg
+
 	if l.colorizer != nil {
 		msg = l.colorizer.Wrap(msg, `info`)
 	}
 
 	if len(params) > 0 {
-		l.logStd.Printf(`INFO: `+msg+"\n", params...)
+		l.logStd.Printf(msg+"\n", params...)
 	} else {
-		l.logStd.Println(`INFO: ` + msg)
+		l.logStd.Println(msg)
 	}
 }
 
@@ -107,27 +111,31 @@ func (l *Logger) Error(msg string, params ...interface{}) {
 		return // do not log
 	}
 
+	msg = `ERROR: ` + msg
+
 	if l.colorizer != nil {
 		msg = l.colorizer.Wrap(msg, `error`)
 	}
 
 	if len(params) > 0 {
-		l.logErr.Printf(`ERROR: `+msg+"\n", params...)
+		l.logErr.Printf(msg+"\n", params...)
 	} else {
-		l.logErr.Println(`ERROR: ` + msg)
+		l.logErr.Println(msg)
 	}
 }
 
 // Info log fatal message and exit afterwards
 func (l *Logger) Fatal(msg string, params ...interface{}) {
+	msg = `FATAL: ` + msg
+
 	if l.colorizer != nil {
 		msg = l.colorizer.Wrap(msg, `error`)
 	}
 
 	if len(params) > 0 {
-		l.logErr.Fatalf(`FATAL: `+msg+"\n", params)
+		l.logErr.Fatalf(msg+"\n", params)
 	} else {
-		l.logErr.Fatalln(`FATAL: ` + msg)
+		l.logErr.Fatalln(msg)
 	}
 }
 
