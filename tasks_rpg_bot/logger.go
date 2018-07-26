@@ -32,6 +32,7 @@ type LoggerConfigLog struct {
 type LoggerConfig struct {
 	Name           string // logger name
 	VerbosityLevel int8   // verbosity level
+	Color          bool   // colorify output
 
 	LogStd LoggerConfigLog // log normal messages
 	LogErr LoggerConfigLog // log errors
@@ -43,6 +44,7 @@ type Logger struct {
 	logErr         *log.Logger // log errors
 	Name           string
 	VerbosityLevel int8
+	colorizer      *ColorizerStruct
 }
 
 // DebugMode shows true when verbosity level is debug
@@ -71,6 +73,10 @@ func (l *Logger) Debug(msg string, params ...interface{}) {
 		return // do not log
 	}
 
+	if l.colorizer != nil {
+		msg = l.colorizer.Wrap(msg, `debug`)
+	}
+
 	if len(params) > 0 {
 		l.logStd.Printf(`DEBUG: `+msg+"\n", params)
 	} else {
@@ -82,6 +88,10 @@ func (l *Logger) Debug(msg string, params ...interface{}) {
 func (l *Logger) Info(msg string, params ...interface{}) {
 	if l.VerbosityLevel < VerbosityNormal {
 		return // do not log
+	}
+
+	if l.colorizer != nil {
+		msg = l.colorizer.Wrap(msg, `info`)
 	}
 
 	if len(params) > 0 {
@@ -97,6 +107,10 @@ func (l *Logger) Error(msg string, params ...interface{}) {
 		return // do not log
 	}
 
+	if l.colorizer != nil {
+		msg = l.colorizer.Wrap(msg, `error`)
+	}
+
 	if len(params) > 0 {
 		l.logErr.Printf(`ERROR: `+msg+"\n", params...)
 	} else {
@@ -106,6 +120,10 @@ func (l *Logger) Error(msg string, params ...interface{}) {
 
 // Info log fatal message and exit afterwards
 func (l *Logger) Fatal(msg string, params ...interface{}) {
+	if l.colorizer != nil {
+		msg = l.colorizer.Wrap(msg, `error`)
+	}
+
 	if len(params) > 0 {
 		l.logErr.Fatalf(`FATAL: `+msg+"\n", params)
 	} else {
@@ -121,6 +139,10 @@ func NewLogger(config LoggerConfig) *Logger {
 		logger.Name = `defaultLogger`
 	} else {
 		logger.Name = config.Name
+	}
+
+	if config.Color {
+		logger.colorizer = NewColorizer(map[string]string{`debug`: clGreen, `info`: clBlue, `error`: clRed})
 	}
 
 	if config.VerbosityLevel == VerbosityNotSet {
