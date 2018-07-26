@@ -7,6 +7,7 @@ type inputFlagsStruct struct {
 	Quiet   bool
 	Color   bool
 	AuthKey string
+	Sleep   int
 }
 
 // ParseVerbosity selects proper verbosity level based on verbosity flag values
