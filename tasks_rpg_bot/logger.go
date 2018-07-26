@@ -80,7 +80,7 @@ func (l *Logger) Debug(msg string, params ...interface{}) {
 	}
 
 	if len(params) > 0 {
-		l.logStd.Printf(msg+"\n", params)
+		l.logStd.Printf(msg+"\n", params...)
 	} else {
 		l.logStd.Println(msg)
 	}
@@ -133,7 +133,7 @@ func (l *Logger) Fatal(msg string, params ...interface{}) {
 	}
 
 	if len(params) > 0 {
-		l.logErr.Fatalf(msg+"\n", params)
+		l.logErr.Fatalf(msg+"\n", params...)
 	} else {
 		l.logErr.Fatalln(msg)
 	}

@@ -255,7 +255,6 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 		if upd.UpdateId >= r.routingUpdate.Offset {
 			logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, upd.UpdateId+1)
 			r.routingUpdate.Offset = upd.UpdateId + 1
-
 		}
 	}
 
