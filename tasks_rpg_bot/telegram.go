@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -113,6 +112,11 @@ type TelegramBotsApiStruct struct {
 	routingUpdate UpdateRequestModel
 	routingSend   SendMessageRequestModel
 
+	//commands []BotCommand
+	commands []BotCommander
+
+	commandDefault DefaultBotCommandStruct
+
 	//routing map[string]TelegramBotsApiRequestModel // routing for requests
 }
 
@@ -188,51 +192,61 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 	sentOnceSuccessfully := false
 
+	var runOptions RunOptionsStruct
+
 	for _, upd := range updates.Result {
 		logger.Info(`Handling update `, upd.UpdateId, `message`, upd.Message.MessageId)
 		logger.Debug(`> %s`, upd.Message.Text)
 
+		runOptions.Upd = upd
+
 		var text = upd.Message.Text
 		for _, ent := range upd.Message.Entities {
+			runOptions.Ent = ent
+
 			if ent.Type == `bot_command` {
 				cmd := upd.Message.Text[ent.Offset : ent.Offset+ent.Length]
 				logger.Debug(`Is bot command:`, cmd)
 
-				switch cmd {
-				case `/start`:
-					text = `Hi, ` + upd.Message.From.FirstName + ` ` + upd.Message.From.LastName + `. Thanks for using this bot!`
-					//case `/time`:
-					//	text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
-					//case `/code`:
-					//	// log.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
-					//	if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
-					//		text = `No input...`
-					//	} else {
-					//		text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-					//		text = "```\n" + text + "\n```"
-					//	}
-					//
-					//	// text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
-					//case `/sh`:
-					//	query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-					//	text = "```\n$ " + query + "\n"
-					//
-					//	cmd := exec.Command(`/bin/bash`, `-c`, query)
-					//	cmd.Env = os.Environ()
-					//	out, err := cmd.Output()
-					//	if err != nil {
-					//		out = []byte(`ERROR: ` + err.Error())
-					//	}
-					//
-					//	text += "\n" + string(out) + "\n```"
-
-				default:
-					if len(upd.Message.Text) > ent.Offset+ent.Length {
-						text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-					} else {
-						text = `Sorry, cannot process your command`
-					}
+				for _, cmd := range r.commands {
+					text = "PONG: " + cmd.GetName() + " -> \n```\n" + text + "\n```"
 				}
+
+				//switch cmd {
+				//case `/start`:
+				//	text = `Hi, ` + upd.Message.From.FirstName + ` ` + upd.Message.From.LastName + `. Thanks for using this bot!`
+				//	//case `/time`:
+				//	//	text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
+				//	//case `/code`:
+				//	//	// log.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
+				//	//	if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
+				//	//		text = `No input...`
+				//	//	} else {
+				//	//		text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+				//	//		text = "```\n" + text + "\n```"
+				//	//	}
+				//	//
+				//	//	// text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
+				//	//case `/sh`:
+				//	//	query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+				//	//	text = "```\n$ " + query + "\n"
+				//	//
+				//	//	cmd := exec.Command(`/bin/bash`, `-c`, query)
+				//	//	cmd.Env = os.Environ()
+				//	//	out, err := cmd.Output()
+				//	//	if err != nil {
+				//	//		out = []byte(`ERROR: ` + err.Error())
+				//	//	}
+				//	//
+				//	//	text += "\n" + string(out) + "\n```"
+				//
+				//default:
+				//	if len(upd.Message.Text) > ent.Offset+ent.Length {
+				//		text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+				//	} else {
+				//		text = `Sorry, cannot process your command`
+				//	}
+				//}
 				logger.Debug(`Message changed to:`, text)
 			} else if !ent.allowedType() {
 				logger.Info(`Warning! Unexpected MessageEntity type:`, ent.Type)
@@ -292,6 +306,8 @@ func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
 	api.routingMe.init(&api)
 	api.routingUpdate.init(&api)
 	api.routingSend.init(&api)
+
+	api.commands = append(api.commands, StartBotCommandStruct{})
 
 	return &api
 }
