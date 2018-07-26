@@ -2,10 +2,11 @@ package main
 
 // inputFlagsStruct contains all possible verbosity output levels available as CLI args
 type inputFlagsStruct struct {
-	Debug bool
-	Error bool
-	Quiet bool
-	Color bool
+	Debug   bool
+	Error   bool
+	Quiet   bool
+	Color   bool
+	AuthKey string
 }
 
 // ParseVerbosity selects proper verbosity level based on verbosity flag values
