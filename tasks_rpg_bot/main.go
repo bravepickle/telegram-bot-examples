@@ -34,65 +34,65 @@ func main() {
 	appConfig = NewAppConfig()
 
 	logger = initLogger()
-	dbManager = NewDbManager(appConfig.GetDbDsn())
+	//dbManager = NewDbManager(appConfig.GetDbDsn())
+	//
+	//database := dbManager.db
 
-	database := dbManager.db
-
-	//statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, firstname TEXT, lastname TEXT)")
-	//statement.Exec()
-	//statement, _ = database.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
-	//statement.Exec("Nic", "Raboy")
-
-	//e.InitSql = "CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY, user_id TEXT, title TEXT, description TEXT, status TEXT, exp INTEGER, date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)"
-
-	statement, err := database.Prepare("INSERT INTO task (user_id, title, status, description, status, exp) VALUES (?, ?, ?, ?, ?, ?)")
-
-	fmt.Println(err)
-
-	//statement, _ := database.Prepare("INSERT INTO task (id, title, status) VALUES (?, ?, ?)")
-	result, err := statement.Exec(123, "testing task", "pending", "desc abc", "pending", 500)
-
-	fmt.Println(result)
-	fmt.Println(err)
-
-	rows, err := database.Query("SELECT * FROM task")
-	//rows, err := database.Query("SELECT id FROM task")
-	//rows, err := database.Query("SELECT title FROM task")
-	//var id int
-	//var firstname string
-	//var lastname string
-
-	fmt.Println(err)
-
-	//var values []interface{}
-	//values = make([]interface{}, 8)
-
-	//var values []interface{}
-	//values := make([]interface{}, 8)
-	//values := make([]string, 8)
-	//values := make([]string, 8)
-
-	var title string
-
-	var taskEntity TaskDbEntity
-
-	for rows.Next() {
-		//rows.Scan(&id)
-		//rows.Scan(&title)
-		err = taskEntity.Load(rows)
-		//err = rows.Scan(&values[0])
-		fmt.Println(err)
-		//fmt.Println(id)
-		fmt.Println(taskEntity)
-		//fmt.Println(values)
-		//rows.Scan(&title)
-
-		fmt.Println(title)
-		//rows.Scan(&id, &firstname, &lastname)
-		//fmt.Println(strconv.Itoa(id) + ": " + firstname + " " + lastname)
-	}
-
-	logger.Fatal(`DB MANAGER: %v`, *dbManager)
+	////statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, firstname TEXT, lastname TEXT)")
+	////statement.Exec()
+	////statement, _ = database.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
+	////statement.Exec("Nic", "Raboy")
+	//
+	////e.InitSql = "CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY, user_id TEXT, title TEXT, description TEXT, status TEXT, exp INTEGER, date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)"
+	//
+	//statement, err := database.Prepare("INSERT INTO task (user_id, title, status, description, status, exp) VALUES (?, ?, ?, ?, ?, ?)")
+	//
+	//fmt.Println(err)
+	//
+	////statement, _ := database.Prepare("INSERT INTO task (id, title, status) VALUES (?, ?, ?)")
+	//result, err := statement.Exec(123, "testing task", "pending", "desc abc", "pending", 500)
+	//
+	//fmt.Println(result)
+	//fmt.Println(err)
+	//
+	//rows, err := database.Query("SELECT * FROM task")
+	////rows, err := database.Query("SELECT id FROM task")
+	////rows, err := database.Query("SELECT title FROM task")
+	////var id int
+	////var firstname string
+	////var lastname string
+	//
+	//fmt.Println(err)
+	//
+	////var values []interface{}
+	////values = make([]interface{}, 8)
+	//
+	////var values []interface{}
+	////values := make([]interface{}, 8)
+	////values := make([]string, 8)
+	////values := make([]string, 8)
+	//
+	//var title string
+	//
+	//var taskEntity TaskDbEntity
+	//
+	//for rows.Next() {
+	//	//rows.Scan(&id)
+	//	//rows.Scan(&title)
+	//	err = taskEntity.Load(rows)
+	//	//err = rows.Scan(&values[0])
+	//	fmt.Println(err)
+	//	//fmt.Println(id)
+	//	fmt.Println(taskEntity)
+	//	//fmt.Println(values)
+	//	//rows.Scan(&title)
+	//
+	//	fmt.Println(title)
+	//	//rows.Scan(&id, &firstname, &lastname)
+	//	//fmt.Println(strconv.Itoa(id) + ": " + firstname + " " + lastname)
+	//}
+	//
+	//logger.Fatal(`DB MANAGER: %v`, *dbManager)
 
 	api = NewTelegramBotsApi(getAuthKey(), inputFlags.Sleep)
 

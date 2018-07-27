@@ -195,7 +195,7 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 	var runOptions RunOptionsStruct
 
 	for _, upd := range updates.Result {
-		logger.Info(`Handling update `, upd.UpdateId, `message`, upd.Message.MessageId)
+		logger.Info(`Handling update ID=%d, Message=%d`, upd.UpdateId, upd.Message.MessageId)
 		logger.Debug(`> %s`, upd.Message.Text)
 
 		runOptions.Upd = upd
@@ -206,10 +206,27 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 			if ent.Type == `bot_command` {
 				cmd := upd.Message.Text[ent.Offset : ent.Offset+ent.Length]
-				logger.Debug(`Is bot command:`, cmd)
+				logger.Debug(`Is bot command: %s`, cmd)
 
-				for _, cmd := range r.commands {
-					text = "PONG: " + cmd.GetName() + " -> \n```\n" + text + "\n```"
+				found := false
+				for _, botCommand := range r.commands {
+
+					if cmd == botCommand.GetName() {
+						found = true
+						text = "FOUND: " + botCommand.GetName() + " -> \n```\n" + text + "\n```"
+
+						botCommand.Run(runOptions)
+
+						break
+					}
+
+					logger.Debug(`Mismatch %s != %s`, cmd, botCommand.GetName())
+
+					//text = "PONG: " + cmd.GetName() + " -> \n```\n" + text + "\n```"
+				}
+
+				if !found {
+					r.commandDefault.Run(runOptions)
 				}
 
 				//switch cmd {
@@ -247,9 +264,11 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 				//		text = `Sorry, cannot process your command`
 				//	}
 				//}
-				logger.Debug(`Message changed to:`, text)
+				logger.Debug(`Message changed to: %s`, text)
 			} else if !ent.allowedType() {
-				logger.Info(`Warning! Unexpected MessageEntity type:`, ent.Type)
+				logger.Info(`Warning! Unexpected MessageEntity type: %s`, ent.Type)
+			} else {
+				logger.Info(`Failed to handle message entity type: %s`, ent.Type)
 			}
 		}
 

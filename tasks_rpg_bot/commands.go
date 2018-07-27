@@ -11,35 +11,46 @@ type RunOptionsStruct struct {
 }
 
 type BotCommand struct {
-	Name string
+	//Name string
 }
 
 func (c BotCommand) Run(options RunOptionsStruct) {
 	// TODO: implement me
 }
 
-func (c BotCommand) GetName() string {
-	return c.Name
-}
+//
+//func (c BotCommand) GetName() string {
+//	return c.Name
+//}
 
 type StartBotCommandStruct struct {
 	BotCommand
-	//BotCommander
+	BotCommander
 }
 
 func (c StartBotCommandStruct) Run(options RunOptionsStruct) {
-	// TODO: implement me
+	logger.Info(`Running %s command`, c.GetName())
+}
+
+func (c StartBotCommandStruct) GetName() string {
+	return `/start`
 }
 
 type DefaultBotCommandStruct struct {
 	BotCommand
-	//BotCommander
+	BotCommander
+}
+
+func (c DefaultBotCommandStruct) GetName() string {
+	return `/default`
 }
 
 func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) {
 	//if len(upd.Message.Text) > ent.Offset+ent.Length {
 	//	text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
 	//} else {
-	text = `Sorry, cannot process your command`
+	//text = `Sorry, cannot process your command`
 	//}
+
+	logger.Info(`Running %s command`, c.GetName())
 }
