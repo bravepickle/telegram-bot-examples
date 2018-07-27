@@ -154,7 +154,7 @@ func (r *TelegramBotsApiStruct) processRequests() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for sig := range c {
-			logger.Info(`Signal "%s" called`, sig)
+			logger.Info(`Signal "%s" called. Terminating...`, sig)
 			terminated = true
 		}
 	}()
@@ -167,6 +167,10 @@ func (r *TelegramBotsApiStruct) processRequests() {
 		}
 
 		time.Sleep(time.Duration(r.Sleep) * time.Second)
+
+		if terminated {
+			break
+		}
 	}
 
 	logger.Debug(`Finished processing requests.`)
@@ -202,7 +206,7 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 		runOptions.Upd = upd
 
-		var text = upd.Message.Text
+		//var text = upd.Message.Text
 		for _, ent := range upd.Message.Entities {
 			runOptions.Ent = ent
 
@@ -215,7 +219,7 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 					if cmd == botCommand.GetName() {
 						found = true
-						text = "FOUND: " + botCommand.GetName() + " -> \n```\n" + text + "\n```"
+						//text = "FOUND: " + botCommand.GetName() + " -> \n```\n" + text + "\n```"
 
 						sendMessage, err = botCommand.Run(runOptions)
 						if err != nil {
@@ -272,7 +276,7 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 				//		text = `Sorry, cannot process your command`
 				//	}
 				//}
-				logger.Debug(`Message changed to: %s`, text)
+				//logger.Debug(`Message changed to: %s`, text)
 			} else if !ent.allowedType() {
 				logger.Info(`Warning! Unexpected MessageEntity type: %s`, ent.Type)
 			} else {
@@ -281,6 +285,8 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 		}
 
 		//msg := NewSendMessage(upd.Message.Chat.Id, text /*, upd.Message.MessageId*/)
+
+		logger.Info(`Response message: %v`, sendMessage)
 
 		payload := url.Values{}
 		for name, value := range sendMessage {
