@@ -193,6 +193,8 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 	sentOnceSuccessfully := false
 
 	var runOptions RunOptionsStruct
+	var sendMessage sendMessageStruct
+	var err error
 
 	for _, upd := range updates.Result {
 		logger.Info(`Handling update ID=%d, Message=%d`, upd.UpdateId, upd.Message.MessageId)
@@ -215,7 +217,10 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 						found = true
 						text = "FOUND: " + botCommand.GetName() + " -> \n```\n" + text + "\n```"
 
-						botCommand.Run(runOptions)
+						sendMessage, err = botCommand.Run(runOptions)
+						if err != nil {
+							logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
+						}
 
 						break
 					}
@@ -226,7 +231,10 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 				}
 
 				if !found {
-					r.commandDefault.Run(runOptions)
+					sendMessage, err = r.commandDefault.Run(runOptions)
+					if err != nil {
+						logger.Fatal(`Command run "%s" failed: %s`, r.commandDefault.GetName(), err)
+					}
 				}
 
 				//switch cmd {
@@ -272,10 +280,10 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 			}
 		}
 
-		msg := NewSendMessage(upd.Message.Chat.Id, text /*, upd.Message.MessageId*/)
+		//msg := NewSendMessage(upd.Message.Chat.Id, text /*, upd.Message.MessageId*/)
 
 		payload := url.Values{}
-		for name, value := range msg {
+		for name, value := range sendMessage {
 			payload.Set(name, value)
 		}
 

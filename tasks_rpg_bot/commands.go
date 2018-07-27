@@ -1,7 +1,7 @@
 package main
 
 type BotCommander interface {
-	Run(options RunOptionsStruct)
+	Run(options RunOptionsStruct) (sendMessageStruct, error)
 	GetName() string
 }
 
@@ -14,9 +14,9 @@ type BotCommand struct {
 	//Name string
 }
 
-func (c BotCommand) Run(options RunOptionsStruct) {
-	// TODO: implement me
-}
+//func (c BotCommand) Run(options RunOptionsStruct) (sendMessageStruct, error) {
+//	// TODO: implement me
+//}
 
 //
 //func (c BotCommand) GetName() string {
@@ -28,8 +28,10 @@ type StartBotCommandStruct struct {
 	BotCommander
 }
 
-func (c StartBotCommandStruct) Run(options RunOptionsStruct) {
+func (c StartBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
 	logger.Info(`Running %s command`, c.GetName())
+
+	return NewSendMessage(options.Upd.Message.Chat.Id, `Results of running command `+c.GetName()), nil
 }
 
 func (c StartBotCommandStruct) GetName() string {
@@ -45,7 +47,7 @@ func (c DefaultBotCommandStruct) GetName() string {
 	return `/default`
 }
 
-func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) {
+func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
 	//if len(upd.Message.Text) > ent.Offset+ent.Length {
 	//	text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
 	//} else {
@@ -53,4 +55,6 @@ func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) {
 	//}
 
 	logger.Info(`Running %s command`, c.GetName())
+
+	return NewSendMessage(options.Upd.Message.Chat.Id, `Results of running command `+c.GetName()), nil
 }

@@ -20,7 +20,7 @@ func init() {
 	flag.BoolVar(&inputFlags.Quiet, "q", false, "No output.")
 	flag.BoolVar(&inputFlags.Color, "c", false, "Disable colored output.")
 	flag.StringVar(&inputFlags.AuthKey, "k", ``, "Telegram Bots API Auth Key. Required.")
-	flag.IntVar(&inputFlags.Sleep, "s", pollSleepInterval, "Sleep interval in seconds between polling for updates.")
+	flag.IntVar(&inputFlags.Sleep, "s", 0, "Sleep interval in seconds between polling for updates.")
 }
 
 // TODO: init logs and start bot run based on configs
@@ -94,7 +94,11 @@ func main() {
 	//
 	//logger.Fatal(`DB MANAGER: %v`, *dbManager)
 
-	api = NewTelegramBotsApi(getAuthKey(), inputFlags.Sleep)
+	sleep := initSleep()
+
+	//logger.Fatal(`Sleep %d`, sleep)
+
+	api = NewTelegramBotsApi(getAuthKey(), sleep)
 
 	if !api.checkConnection() {
 		logger.Fatal(`Failed to establish connection to %s`, api)
@@ -112,6 +116,17 @@ func main() {
 	////logger.Fatal(`Hello, chaos world! %s`, *api)
 	//logger.Fatal(`Hello, chaos world!`)
 
+}
+
+func initSleep() int {
+	sleep := inputFlags.Sleep
+	if sleep <= 0 {
+		sleep = appConfig.GetApiTimeout()
+	}
+	if sleep <= 0 {
+		sleep = responseTimeoutDefault
+	}
+	return sleep
 }
 
 func getAuthKey() string {

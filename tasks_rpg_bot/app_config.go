@@ -4,11 +4,13 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"os"
+	"strconv"
 )
 
 const defaultEnvFile = `.env`
 const cfgDbDsn = `DB_DSN`
 const cfgApiAuthKey = `API_AUTH_KEY`
+const cfgApiTimeout = `API_TIMEOUT`
 
 type AppConfigStruct struct {
 	params map[string]string
@@ -28,6 +30,20 @@ func (c *AppConfigStruct) GetDbDsn() string {
 
 func (c *AppConfigStruct) GetApiAuthKey() string {
 	return c.Get(cfgApiAuthKey, ``)
+}
+func (c *AppConfigStruct) GetApiTimeout() int {
+	strTimeout := c.Get(cfgApiTimeout, ``)
+	if strTimeout == `` {
+		return responseTimeoutDefault
+	}
+
+	timeout, err := strconv.Atoi(strTimeout)
+
+	if err != nil {
+		logger.Fatal(`Failed to parse value for "%s": %s`, cfgApiTimeout, err)
+	}
+
+	return timeout
 }
 
 func (c *AppConfigStruct) load(filenames ...string) {
