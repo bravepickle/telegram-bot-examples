@@ -10,6 +10,7 @@ var logger *Logger
 var inputFlags inputFlagsStruct
 var api *TelegramBotsApiStruct
 var appConfig *AppConfigStruct
+var dbManager *DbManager
 
 const pollSleepInterval = 5
 
@@ -33,6 +34,51 @@ func main() {
 	appConfig = NewAppConfig()
 
 	logger = initLogger()
+	dbManager = NewDbManager(appConfig.GetDbDsn())
+
+	database := dbManager.db
+
+	//statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, firstname TEXT, lastname TEXT)")
+	//statement.Exec()
+	//statement, _ = database.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
+	//statement.Exec("Nic", "Raboy")
+
+	statement, _ := database.Prepare("INSERT INTO task (title, status) VALUES (?, ?)")
+	result, err := statement.Exec("testing task", "pending")
+
+	fmt.Println(result)
+	fmt.Println(err)
+
+	//rows, err := database.Query("SELECT * FROM task")
+	rows, err := database.Query("SELECT title FROM task")
+	//var id int
+	//var firstname string
+	//var lastname string
+
+	fmt.Println(err)
+
+	//var values []interface{}
+	//values = make([]interface{}, 8)
+
+	//var values []interface{}
+	//values := make([]interface{}, 8)
+	values := make([]string, 8)
+	//values := make([]string, 8)
+
+	//var title string
+
+	for rows.Next() {
+		err = rows.Scan(&values[0])
+		fmt.Println(err)
+		fmt.Println(values)
+		//rows.Scan(&title)
+
+		//fmt.Println(title)
+		//rows.Scan(&id, &firstname, &lastname)
+		//fmt.Println(strconv.Itoa(id) + ": " + firstname + " " + lastname)
+	}
+
+	logger.Fatal(`DB MANAGER: %v`, *dbManager)
 
 	api = NewTelegramBotsApi(getAuthKey(), inputFlags.Sleep)
 

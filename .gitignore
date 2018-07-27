@@ -1,3 +1,4 @@
 /echo_bot/echo_bot
 /tasks_rpg_bot/tasks_rpg_bot
 .env
+*.db
