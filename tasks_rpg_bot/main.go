@@ -9,6 +9,7 @@ import (
 var logger *Logger
 var inputFlags inputFlagsStruct
 var api *TelegramBotsApiStruct
+var appConfig *AppConfigStruct
 
 const pollSleepInterval = 5
 
@@ -29,15 +30,11 @@ func main() {
 	fmt.Printf("Starting application in \"%s\" mode\n", inputFlags.StringVerbosity())
 	//fmt.Printf("Color mode is \"%t\"\n", inputFlags.Color)
 
+	appConfig = NewAppConfig()
+
 	logger = initLogger()
 
-	if inputFlags.AuthKey == `` {
-		fmt.Println(logger.colorizer.Wrap(`Error! Required option Auth Key value not set`, `error`))
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	api = NewTelegramBotsApi(inputFlags.AuthKey, inputFlags.Sleep)
+	api = NewTelegramBotsApi(getAuthKey(), inputFlags.Sleep)
 
 	if !api.checkConnection() {
 		logger.Fatal(`Failed to establish connection to %s`, api)
@@ -55,6 +52,23 @@ func main() {
 	////logger.Fatal(`Hello, chaos world! %s`, *api)
 	//logger.Fatal(`Hello, chaos world!`)
 
+}
+
+func getAuthKey() string {
+	var authKey string
+	if inputFlags.AuthKey == `` {
+		authKey = appConfig.GetApiAuthKey()
+
+		if authKey == `` {
+			fmt.Println(logger.colorizer.Wrap(`Error! Auth Key value not set neither in config nor in command options`, `error`))
+			flag.Usage()
+			os.Exit(1)
+		}
+	} else {
+		authKey = inputFlags.AuthKey
+	}
+
+	return authKey
 }
 
 func initLogger() *Logger {
