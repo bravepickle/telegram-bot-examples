@@ -31,7 +31,8 @@ func (m *DbManager) init(dsn string) {
 
 func (m *DbManager) initTables() {
 	queries := []string{
-		"CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY, user_id TEXT, title TEXT, description TEXT, status TEXT, exp INTEGER, date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)",
+		"CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT, description TEXT, status TEXT, exp INTEGER, date_expiration TEXT DEFAULT '', date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)",
+		"CREATE TABLE IF NOT EXISTS user (id INTEGER PRIMARY KEY, name TEXT, exp INTEGER, date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)",
 	}
 
 	for _, query := range queries {

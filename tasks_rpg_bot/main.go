@@ -43,14 +43,21 @@ func main() {
 	//statement, _ = database.Prepare("INSERT INTO people (firstname, lastname) VALUES (?, ?)")
 	//statement.Exec("Nic", "Raboy")
 
-	statement, _ := database.Prepare("INSERT INTO task (title, status) VALUES (?, ?)")
-	result, err := statement.Exec("testing task", "pending")
+	//e.InitSql = "CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY, user_id TEXT, title TEXT, description TEXT, status TEXT, exp INTEGER, date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)"
+
+	statement, err := database.Prepare("INSERT INTO task (user_id, title, status, description, status, exp) VALUES (?, ?, ?, ?, ?, ?)")
+
+	fmt.Println(err)
+
+	//statement, _ := database.Prepare("INSERT INTO task (id, title, status) VALUES (?, ?, ?)")
+	result, err := statement.Exec(123, "testing task", "pending", "desc abc", "pending", 500)
 
 	fmt.Println(result)
 	fmt.Println(err)
 
-	//rows, err := database.Query("SELECT * FROM task")
-	rows, err := database.Query("SELECT title FROM task")
+	rows, err := database.Query("SELECT * FROM task")
+	//rows, err := database.Query("SELECT id FROM task")
+	//rows, err := database.Query("SELECT title FROM task")
 	//var id int
 	//var firstname string
 	//var lastname string
@@ -62,18 +69,25 @@ func main() {
 
 	//var values []interface{}
 	//values := make([]interface{}, 8)
-	values := make([]string, 8)
+	//values := make([]string, 8)
 	//values := make([]string, 8)
 
-	//var title string
+	var title string
+
+	var taskEntity TaskDbEntity
 
 	for rows.Next() {
-		err = rows.Scan(&values[0])
+		//rows.Scan(&id)
+		//rows.Scan(&title)
+		err = taskEntity.Load(rows)
+		//err = rows.Scan(&values[0])
 		fmt.Println(err)
-		fmt.Println(values)
+		//fmt.Println(id)
+		fmt.Println(taskEntity)
+		//fmt.Println(values)
 		//rows.Scan(&title)
 
-		//fmt.Println(title)
+		fmt.Println(title)
 		//rows.Scan(&id, &firstname, &lastname)
 		//fmt.Println(strconv.Itoa(id) + ": " + firstname + " " + lastname)
 	}
