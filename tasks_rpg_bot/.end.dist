@@ -1,0 +1,5 @@
+# database settings
+DB_DSN="file:test.db?cache=shared&mode=memory"
+
+# Telegram API
+API_AUTH_KEY="****"

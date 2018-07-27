@@ -3,7 +3,8 @@ Telegram Bots that might help developers to work as extra tools
 
 ## Requirements
 * _tasks_rpg_bot_
-  * github.com/mattn/go-sqlite3
+  * github.com/mattn/go-sqlite3 - db read/write tasks
+  * github.com/joho/godotenv - configuring
 
  
 ## List
