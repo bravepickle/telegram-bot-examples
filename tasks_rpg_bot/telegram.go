@@ -250,7 +250,8 @@ func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct
 
 		found := false
 		for _, botCommand := range r.commands {
-			if cmd == botCommand.GetName() {
+			if botCommand.IsRunning(runOptions) || cmd == botCommand.GetName() {
+				// TODO: reset all running commands for user and reinit current one if newly called??
 				found = true
 				sendMessage, err = botCommand.Run(runOptions)
 				if err != nil {
@@ -334,8 +335,7 @@ func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
 	api.routingUpdate.init(&api)
 	api.routingSend.init(&api)
 
-	api.commands = append(api.commands, StartBotCommandStruct{})
-	api.commands = append(api.commands, AddTaskBotCommandStruct{})
+	api.commands = append(api.commands, NewStartBotCommand(), NewAddTaskBotCommand())
 
 	return &api
 }

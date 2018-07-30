@@ -17,3 +17,5 @@ Telegram Bots that might help developers to work as extra tools
 * use for telegram bots https://github.com/go-telegram-bot-api/telegram-bot-api or similar
 * add forms for RPG tasks bot https://core.telegram.org/bots#keyboards
 * listeners for transactions - add/edit tasks in multiple steps etc.
+* use go routines and channels for each type of command to process message updates
+* messageUpdate -> fan out channels x Commands -> fan out each message entity -> fan in message entities -> fan in command Done status

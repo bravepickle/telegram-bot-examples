@@ -1,6 +1,9 @@
 package main
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+)
 
 //const U+1F320
 const emojiGlowingStar = "\U0001F31F"
@@ -9,6 +12,8 @@ const emojiColdSweat = "\U0001F613"
 type BotCommander interface {
 	Run(options RunOptionsStruct) (sendMessageStruct, error)
 	GetName() string
+	IsRunning(options RunOptionsStruct) bool // return true if command is transactional and in process of running, e.g. waiting for user input
+	Init()
 }
 
 type RunOptionsStruct struct {
@@ -16,13 +21,19 @@ type RunOptionsStruct struct {
 	Ent MessageEntityTelegramModel
 }
 
-//type BotCommand struct {
-//	//Name string
-//}
+type BotCommand struct {
+	//Name string
+}
+
+func (c BotCommand) IsRunning(options RunOptionsStruct) bool {
+	return false
+}
+
+func (c BotCommand) Init() {
+}
 
 type StartBotCommandStruct struct {
-	//BotCommand
-	BotCommander
+	BotCommand
 }
 
 func (c StartBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
@@ -45,8 +56,8 @@ func (c StartBotCommandStruct) GetName() string {
 }
 
 type DefaultBotCommandStruct struct {
-	//BotCommand
-	BotCommander
+	BotCommand
+	//BotCommander
 }
 
 func (c DefaultBotCommandStruct) GetName() string {
@@ -68,10 +79,7 @@ func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 // ================== AddTaskBotCommandStruct
 
 type AddTaskBotCommandStruct struct {
-	//BotCommand
-	BotCommander
-	//isRunning bool
-	//channel chan sendMessageStruct
+	BotCommand
 
 	// list of transactions that are running and not finished
 	transactions map[uint32]Transactional
@@ -81,23 +89,14 @@ func (c AddTaskBotCommandStruct) GetName() string {
 	return `/add`
 }
 
-//func (c AddTaskBotCommandStruct) initChannel() bool {
-//	if c.channel == nil {
-//		logger.Debug(`Init channel for task %s...`, c.GetName())
-//		c.channel = make(chan sendMessageStruct)
-//
-//		return true
-//	}
-//
-//	return false
-//}
-
-//func (c AddTaskBotCommandStruct) RunChannel(options RunOptionsStruct) {
-//	c.channel <- NewSendMessage(options.Upd.Message.Chat.Id,
-//		`Adding new task FROM CHANNEL. Please, enter the title`, options.Upd.Message.MessageId)
-//}
+func (c AddTaskBotCommandStruct) Init() {
+	logger.Debug(`!!! Init bot command %s`, c.GetName())
+	c.transactions = make(map[uint32]Transactional)
+}
 
 func (c AddTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Transactional {
+	c.transactions = make(map[uint32]Transactional)
+
 	if trans, ok := c.transactions[options.Upd.Message.From.Id]; !ok { // check if set
 		c.transactions[options.Upd.Message.From.Id] = NewAddTaskTransaction()
 
@@ -124,6 +123,25 @@ func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 	//
 	//sendMessage := <- c.channel
 
+	trans := c.initTransaction(options)
+
+	if sendMessage, ok := trans.Run(options); ok {
+		//trans.Next()
+
+		if logger.DebugLevel() {
+			logger.Debug(`Transaction step data result: %s`, encodeToJson(sendMessage))
+		}
+
+		return sendMessage, nil
+
+		//return NewSendMessage(options.Upd.Message.Chat.Id,
+		//	`Adding new task. Please, enter the title`, options.Upd.Message.MessageId), nil
+
+	} else {
+		//return nil, errors.New(`Failed to run command. ` + string(encodeToJson(sendMessage)))
+		return nil, errors.New(`Failed to run command.`)
+	}
+
 	// TODO: remove return error if never used in all commands
 
 	//if c.isRunning {
@@ -135,8 +153,14 @@ func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 	// TODO: channels pool and check transactions
 
 	//return sendMessage, nil
-	return NewSendMessage(options.Upd.Message.Chat.Id,
-		`Adding new task. Please, enter the title`, options.Upd.Message.MessageId), nil
+	//return NewSendMessage(options.Upd.Message.Chat.Id,
+	//	`Adding new task. Please, enter the title`, options.Upd.Message.MessageId), nil
+}
+
+func (c AddTaskBotCommandStruct) IsRunning(options RunOptionsStruct) bool {
+	_, ok := c.transactions[options.Upd.Message.From.Id]
+
+	return ok
 }
 
 // ==================
