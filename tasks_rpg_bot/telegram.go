@@ -198,7 +198,6 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 	var runOptions RunOptionsStruct
 	var sendMessage sendMessageStruct
-	var err error
 
 	for _, upd := range updates.Result {
 		logger.Info(`Handling update ID=%d, Message=%d`, upd.UpdateId, upd.Message.MessageId)
@@ -209,84 +208,16 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 		//var text = upd.Message.Text
 		for _, ent := range upd.Message.Entities {
 			runOptions.Ent = ent
-
-			if ent.Type == `bot_command` {
-				cmd := upd.Message.Text[ent.Offset : ent.Offset+ent.Length]
-				logger.Debug(`Is bot command: %s`, cmd)
-
-				found := false
-				for _, botCommand := range r.commands {
-
-					if cmd == botCommand.GetName() {
-						found = true
-						//text = "FOUND: " + botCommand.GetName() + " -> \n```\n" + text + "\n```"
-
-						sendMessage, err = botCommand.Run(runOptions)
-						if err != nil {
-							logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
-						}
-
-						break
-					}
-
-					logger.Debug(`Mismatch %s != %s`, cmd, botCommand.GetName())
-
-					//text = "PONG: " + cmd.GetName() + " -> \n```\n" + text + "\n```"
-				}
-
-				if !found {
-					sendMessage, err = r.commandDefault.Run(runOptions)
-					if err != nil {
-						logger.Fatal(`Command run "%s" failed: %s`, r.commandDefault.GetName(), err)
-					}
-				}
-
-				//switch cmd {
-				//case `/start`:
-				//	text = `Hi, ` + upd.Message.From.FirstName + ` ` + upd.Message.From.LastName + `. Thanks for using this bot!`
-				//	//case `/time`:
-				//	//	text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
-				//	//case `/code`:
-				//	//	// log.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
-				//	//	if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
-				//	//		text = `No input...`
-				//	//	} else {
-				//	//		text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-				//	//		text = "```\n" + text + "\n```"
-				//	//	}
-				//	//
-				//	//	// text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
-				//	//case `/sh`:
-				//	//	query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-				//	//	text = "```\n$ " + query + "\n"
-				//	//
-				//	//	cmd := exec.Command(`/bin/bash`, `-c`, query)
-				//	//	cmd.Env = os.Environ()
-				//	//	out, err := cmd.Output()
-				//	//	if err != nil {
-				//	//		out = []byte(`ERROR: ` + err.Error())
-				//	//	}
-				//	//
-				//	//	text += "\n" + string(out) + "\n```"
-				//
-				//default:
-				//	if len(upd.Message.Text) > ent.Offset+ent.Length {
-				//		text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-				//	} else {
-				//		text = `Sorry, cannot process your command`
-				//	}
-				//}
-				//logger.Debug(`Message changed to: %s`, text)
-			} else if !ent.allowedType() {
-				logger.Info(`Warning! Unexpected MessageEntity type: %s`, ent.Type)
-			} else {
-				logger.Info(`Failed to handle message entity type: %s`, ent.Type)
-			}
+			sendMessage = r.processMessageEntity(runOptions)
 		}
 
-		//msg := NewSendMessage(upd.Message.Chat.Id, text /*, upd.Message.MessageId*/)
+		if len(sendMessage) == 0 {
+			logger.Debug(`No new messages...`)
 
-		logger.Info(`Response message: %v`, sendMessage)
+			continue
+		}
+
+		logger.Info(`Response message: %s`, encodeToJson(sendMessage))
 
 		payload := url.Values{}
 		for name, value := range sendMessage {
@@ -310,7 +241,43 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 	return sentOnceSuccessfully
 }
 
-func NewSendMessage(chatId uint32, text string /*, replyToMsgId uint32*/) sendMessageStruct {
+func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct) (sendMessage sendMessageStruct) {
+	var err error
+
+	if runOptions.Ent.Type == `bot_command` {
+		cmd := runOptions.Upd.Message.Text[runOptions.Ent.Offset : runOptions.Ent.Offset+runOptions.Ent.Length]
+		logger.Debug(`Is bot command: %s`, cmd)
+
+		found := false
+		for _, botCommand := range r.commands {
+			if cmd == botCommand.GetName() {
+				found = true
+				sendMessage, err = botCommand.Run(runOptions)
+				if err != nil {
+					logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
+				}
+
+				break
+			}
+		}
+
+		if !found {
+			logger.Debug(`Running default command`)
+			sendMessage, err = r.commandDefault.Run(runOptions)
+			if err != nil {
+				logger.Fatal(`Command run "%s" failed: %s`, r.commandDefault.GetName(), err)
+			}
+		}
+	} else if !runOptions.Ent.allowedType() {
+		logger.Info(`Warning! Unexpected MessageEntity type: %s`, runOptions.Ent.Type)
+	} else {
+		logger.Info(`Failed to handle message entity type: %s`, runOptions.Ent.Type)
+	}
+
+	return sendMessage
+}
+
+func NewSendMessage(chatId uint32, text string, replyToMsgId uint32) sendMessageStruct {
 	msg := make(sendMessageStruct)
 
 	msg[`parse_mode`] = `Markdown`
@@ -319,7 +286,10 @@ func NewSendMessage(chatId uint32, text string /*, replyToMsgId uint32*/) sendMe
 
 	msg[`chat_id`] = strconv.FormatInt(int64(chatId), 10)
 	msg[`text`] = text
-	//msg[`reply_to_message_id`] = strconv.FormatInt(int64(replyToMsgId), 10)
+
+	if replyToMsgId != 0 {
+		msg[`reply_to_message_id`] = strconv.FormatInt(int64(replyToMsgId), 10)
+	}
 
 	return msg
 }

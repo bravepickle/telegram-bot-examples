@@ -73,6 +73,8 @@ func (l *Logger) Debug(msg string, params ...interface{}) {
 		return // do not log
 	}
 
+	params = l.paramsToJson(params...)
+
 	msg = `DEBUG: ` + msg
 
 	if l.colorizer != nil {
@@ -91,6 +93,8 @@ func (l *Logger) Info(msg string, params ...interface{}) {
 	if l.VerbosityLevel < VerbosityNormal {
 		return // do not log
 	}
+
+	params = l.paramsToJson(params...)
 
 	msg = `INFO: ` + msg
 
@@ -111,6 +115,8 @@ func (l *Logger) Error(msg string, params ...interface{}) {
 		return // do not log
 	}
 
+	params = l.paramsToJson(params...)
+
 	msg = `ERROR: ` + msg
 
 	if l.colorizer != nil {
@@ -126,6 +132,7 @@ func (l *Logger) Error(msg string, params ...interface{}) {
 
 // Info log fatal message and exit afterwards
 func (l *Logger) Fatal(msg string, params ...interface{}) {
+	params = l.paramsToJson(params...)
 	msg = `FATAL: ` + msg
 
 	if l.colorizer != nil {
@@ -137,6 +144,20 @@ func (l *Logger) Fatal(msg string, params ...interface{}) {
 	} else {
 		l.logErr.Fatalln(msg)
 	}
+}
+
+// paramsToJson convert various types of values to JSON for logging in more readable format
+func (l *Logger) paramsToJson(params ...interface{}) (jsonParams []interface{}) {
+	for _, param := range params {
+		switch param.(type) {
+		default:
+			jsonParams = append(jsonParams, param) // keep as it is
+		case map[string]string, map[int]string:
+			jsonParams = append(jsonParams, encodeToJson(param)) // convert
+		}
+	}
+
+	return jsonParams
 }
 
 // NewLogger creates new instance of logger

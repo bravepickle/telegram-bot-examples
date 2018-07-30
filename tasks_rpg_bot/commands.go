@@ -1,5 +1,11 @@
 package main
 
+import "encoding/json"
+
+//const U+1F320
+const emojiGlowingStar = "\U0001F31F"
+const emojiColdSweat = "\U0001F613"
+
 type BotCommander interface {
 	Run(options RunOptionsStruct) (sendMessageStruct, error)
 	GetName() string
@@ -29,9 +35,18 @@ type StartBotCommandStruct struct {
 }
 
 func (c StartBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
-	logger.Info(`Running %s command`, c.GetName())
+	logger.Debug(`Running %s command`, c.GetName())
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, `Results of running command `+c.GetName()), nil
+	if logger.DebugLevel() {
+		if data, err := json.Marshal(options); err == nil {
+			logger.Debug(`Input: %s`, data)
+		} else {
+			logger.Info(`Failed encoding to JSON options: %s`, err)
+		}
+	}
+
+	return NewSendMessage(options.Upd.Message.Chat.Id,
+		`Welcome to RPG Tasks Bot chat. Gain lots of XP and earn achievements and reach the goals! `+emojiGlowingStar, options.Upd.Message.MessageId), nil
 }
 
 func (c StartBotCommandStruct) GetName() string {
@@ -54,7 +69,7 @@ func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 	//text = `Sorry, cannot process your command`
 	//}
 
-	logger.Info(`Running %s command`, c.GetName())
+	logger.Debug(`Running %s command`, c.GetName())
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, `Results of running command `+c.GetName()), nil
+	return NewSendMessage(options.Upd.Message.Chat.Id, `Sorry, action was not detected`+emojiColdSweat, options.Upd.Message.MessageId), nil
 }
