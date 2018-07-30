@@ -19,7 +19,7 @@ type Transactional interface {
 type TransactionalStep interface {
 	GetName() string
 	Run(t Transactional, options RunOptionsStruct) (sendMessageStruct, bool)
-	Revert(t Transactional) // revert run step
+	Revert(t Transactional, options RunOptionsStruct) // revert run step
 }
 
 // =========== TransactionStruct
@@ -88,7 +88,7 @@ func (t *TransactionStruct) Run(options RunOptionsStruct) (sendMessageStruct, bo
 //}
 
 func (t *TransactionStruct) GetName() string {
-	return `undefined` // override in children
+	return `[undefined]` // override in children
 }
 
 func (t *TransactionStruct) GetData() map[string]interface{} {
@@ -126,9 +126,6 @@ type SetTitleStep struct {
 	TransactionalStep
 }
 
-//GetName() string
-//Run(t Transactional) bool
-//Revert() // revert runned step
 func (t SetTitleStep) GetName() string {
 	return `set-title`
 }
@@ -148,8 +145,8 @@ func (t SetTitleStep) Run(tr Transactional, options RunOptionsStruct) (sendMessa
 
 	//return true
 }
-func (t SetTitleStep) Revert(tr Transactional) {
-	tr.SetData(`title`, nil) // TODO: revert properly
+func (t SetTitleStep) Revert(tr Transactional, options RunOptionsStruct) {
+	tr.SetData(`title`, nil) // TODO: revert properly - check state and decide what to do
 }
 
 func NewAddTaskTransaction() *AddTaskTransactionStruct {
