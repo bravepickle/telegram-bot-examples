@@ -203,6 +203,8 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 	var sendMessage sendMessageStruct
 
 	for _, upd := range updates.Result {
+		// TODO: use go channels for each update and read channel for results of sentOnceSuccessfully
+		// for parallel computation
 		logger.Info(`Handling update ID=%d, Message=%d`, upd.UpdateId, upd.Message.MessageId)
 		logger.Debug(`> %s`, upd.Message.Text)
 

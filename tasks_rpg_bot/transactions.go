@@ -6,20 +6,20 @@ type Transactional interface {
 	GetData() map[string]interface{}
 	SetData(name string, value interface{})
 	Init()
-	Current() string
+	Current() int
 	//GetSteps() []string
 	Next()
 	Prev()
 	Reset()
-	Run()
+	Run() bool
 	//Complete() bool
 	//Commit() bool
 }
 
 type TransactionalStep interface {
 	GetName() string
-	Run(t *TransactionStruct) bool
-	Revert(t *TransactionStruct) // revert run step
+	Run(t Transactional) bool
+	Revert(t Transactional) // revert run step
 }
 
 // =========== TransactionStruct
@@ -45,8 +45,17 @@ func (t *TransactionStruct) Reset() {
 	//t.steps = make(map[int]TransactionalStep)
 }
 
-func (t *TransactionStruct) Current() {
-	t.currentStepIndex = 0
+func (t *TransactionStruct) Current() int {
+	return t.currentStepIndex
+}
+
+func (t *TransactionStruct) Init() {
+}
+
+func (t *TransactionStruct) Run() bool {
+	//t.RunStep()
+
+	return true
 }
 
 func (t *TransactionStruct) RunStep() {
@@ -63,7 +72,7 @@ func (t *TransactionStruct) GetName() string {
 	return `undefined` // override in children
 }
 
-func (t *TransactionStruct) GetData() interface{} {
+func (t *TransactionStruct) GetData() map[string]interface{} {
 	return t.data
 }
 
@@ -87,24 +96,30 @@ func (t *AddTaskTransactionStruct) Init() {
 	t.steps = append(t.steps, SetTitleStep{})
 }
 
+func (t *AddTaskTransactionStruct) Run() bool {
+	t.RunStep()
+
+	return true
+}
+
 // =========== SetTitleStep
 type SetTitleStep struct {
 	TransactionalStep
 }
 
 //GetName() string
-//Run(t *Transactional) bool
+//Run(t Transactional) bool
 //Revert() // revert runned step
 func (t SetTitleStep) GetName() string {
 	return `set-title`
 }
-func (t SetTitleStep) Run(tr *TransactionStruct) bool {
+func (t SetTitleStep) Run(tr Transactional) bool {
 	// TODO: generate message here to input
-	tr.SetData(`title`, `abcddsd // `)
+	//tr.SetData(`title`, `abcddsd // `)
 
 	return true
 }
-func (t SetTitleStep) Revert(tr *TransactionStruct) {
+func (t SetTitleStep) Revert(tr Transactional) {
 	tr.SetData(`title`, nil) // TODO: revert properly
 }
 

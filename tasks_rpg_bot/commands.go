@@ -16,12 +16,12 @@ type RunOptionsStruct struct {
 	Ent MessageEntityTelegramModel
 }
 
-type BotCommand struct {
-	//Name string
-}
+//type BotCommand struct {
+//	//Name string
+//}
 
 type StartBotCommandStruct struct {
-	BotCommand
+	//BotCommand
 	BotCommander
 }
 
@@ -45,7 +45,7 @@ func (c StartBotCommandStruct) GetName() string {
 }
 
 type DefaultBotCommandStruct struct {
-	BotCommand
+	//BotCommand
 	BotCommander
 }
 
@@ -68,12 +68,43 @@ func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 // ================== AddTaskBotCommandStruct
 
 type AddTaskBotCommandStruct struct {
-	BotCommand
+	//BotCommand
 	BotCommander
+	//isRunning bool
+	//channel chan sendMessageStruct
+
+	// list of transactions that are running and not finished
+	transactions map[uint32]Transactional
 }
 
 func (c AddTaskBotCommandStruct) GetName() string {
 	return `/add`
+}
+
+//func (c AddTaskBotCommandStruct) initChannel() bool {
+//	if c.channel == nil {
+//		logger.Debug(`Init channel for task %s...`, c.GetName())
+//		c.channel = make(chan sendMessageStruct)
+//
+//		return true
+//	}
+//
+//	return false
+//}
+
+//func (c AddTaskBotCommandStruct) RunChannel(options RunOptionsStruct) {
+//	c.channel <- NewSendMessage(options.Upd.Message.Chat.Id,
+//		`Adding new task FROM CHANNEL. Please, enter the title`, options.Upd.Message.MessageId)
+//}
+
+func (c AddTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Transactional {
+	if trans, ok := c.transactions[options.Upd.Message.From.Id]; !ok { // check if set
+		c.transactions[options.Upd.Message.From.Id] = NewAddTaskTransaction()
+
+		return c.transactions[options.Upd.Message.From.Id]
+	} else {
+		return trans
+	}
 }
 
 func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
@@ -87,8 +118,23 @@ func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 		}
 	}
 
+	//if c.initChannel() {
+	//	go c.RunChannel(options) // start channel running once
+	//}
+	//
+	//sendMessage := <- c.channel
+
+	// TODO: remove return error if never used in all commands
+
+	//if c.isRunning {
+	//
+	//} else {
+	//	// TODO: implement me
+	//}
+
 	// TODO: channels pool and check transactions
 
+	//return sendMessage, nil
 	return NewSendMessage(options.Upd.Message.Chat.Id,
 		`Adding new task. Please, enter the title`, options.Upd.Message.MessageId), nil
 }
