@@ -149,14 +149,16 @@ func (r *TelegramBotsApiStruct) processRequests() {
 
 	terminated := false
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for sig := range c {
-			logger.Info(`Signal "%s" called. Terminating...`, sig)
-			terminated = true
-		}
-	}()
+	if !logger.DebugLevel() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		go func() {
+			for sig := range c {
+				logger.Info(`Signal "%s" called. Terminating gracefully...`, sig)
+				terminated = true
+			}
+		}()
+	}
 
 	for {
 		r.processUpdates()
@@ -164,6 +166,8 @@ func (r *TelegramBotsApiStruct) processRequests() {
 		if terminated {
 			break
 		}
+
+		logger.Debug(`Sleep...`)
 
 		time.Sleep(time.Duration(r.Sleep) * time.Second)
 
@@ -329,6 +333,7 @@ func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
 	api.routingSend.init(&api)
 
 	api.commands = append(api.commands, StartBotCommandStruct{})
+	api.commands = append(api.commands, AddTaskBotCommandStruct{})
 
 	return &api
 }

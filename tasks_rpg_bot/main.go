@@ -95,9 +95,6 @@ func main() {
 	//logger.Fatal(`DB MANAGER: %v`, *dbManager)
 
 	sleep := initSleep()
-
-	//logger.Fatal(`Sleep %d`, sleep)
-
 	api = NewTelegramBotsApi(getAuthKey(), sleep)
 
 	if !api.checkConnection() {
@@ -107,15 +104,6 @@ func main() {
 	logger.Info(`Successfully connected to %s`, api.BotInfo.Result.Username)
 
 	api.processRequests()
-
-	////logger.Debug(`API ME: ` + api.routingMe.Uri())
-	//logger.Debug(`API ME: ` + api.routingMe.Uri())
-	//logger.Debug(`Hello, weak world!`)
-	//logger.Info(`Hello, world!`)
-	//logger.Error(`Hello, bad world!`)
-	////logger.Fatal(`Hello, chaos world! %s`, *api)
-	//logger.Fatal(`Hello, chaos world!`)
-
 }
 
 func initSleep() int {

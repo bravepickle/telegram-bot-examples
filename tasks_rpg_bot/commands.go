@@ -20,15 +20,6 @@ type BotCommand struct {
 	//Name string
 }
 
-//func (c BotCommand) Run(options RunOptionsStruct) (sendMessageStruct, error) {
-//	// TODO: implement me
-//}
-
-//
-//func (c BotCommand) GetName() string {
-//	return c.Name
-//}
-
 type StartBotCommandStruct struct {
 	BotCommand
 	BotCommander
@@ -73,3 +64,33 @@ func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 
 	return NewSendMessage(options.Upd.Message.Chat.Id, `Sorry, could not recognize this action`+emojiColdSweat, options.Upd.Message.MessageId), nil
 }
+
+// ================== AddTaskBotCommandStruct
+
+type AddTaskBotCommandStruct struct {
+	BotCommand
+	BotCommander
+}
+
+func (c AddTaskBotCommandStruct) GetName() string {
+	return `/add`
+}
+
+func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
+	logger.Debug(`Running %s command`, c.GetName())
+
+	if logger.DebugLevel() {
+		if data, err := json.Marshal(options); err == nil {
+			logger.Debug(`Input: %s`, data)
+		} else {
+			logger.Info(`Failed encoding to JSON options: %s`, err)
+		}
+	}
+
+	// TODO: channels pool and check transactions
+
+	return NewSendMessage(options.Upd.Message.Chat.Id,
+		`Adding new task. Please, enter the title`, options.Upd.Message.MessageId), nil
+}
+
+// ==================
