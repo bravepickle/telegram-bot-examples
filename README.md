@@ -16,3 +16,4 @@ Telegram Bots that might help developers to work as extra tools
 * check permissions for accessing/using bots
 * use for telegram bots https://github.com/go-telegram-bot-api/telegram-bot-api or similar
 * add forms for RPG tasks bot https://core.telegram.org/bots#keyboards
+* listeners for transactions - add/edit tasks in multiple steps etc.

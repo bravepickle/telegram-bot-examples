@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -219,13 +218,8 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 		logger.Info(`Response message: %s`, encodeToJson(sendMessage))
 
-		payload := url.Values{}
-		for name, value := range sendMessage {
-			payload.Set(name, value)
-		}
-
-		if _, ok := r.RequestManager.SendPostRequest(r.routingSend.Uri(), []byte(payload.Encode())); !ok {
-			logger.Error("Failed to send message: %s", payload)
+		if _, ok := r.RequestManager.SendPostJsonRequest(r.routingSend.Uri(), sendMessage); !ok {
+			logger.Error("Failed to send message: %s", encodeToJson(sendMessage))
 		}
 
 		sentOnceSuccessfully = true
@@ -288,7 +282,31 @@ func NewSendMessage(chatId uint32, text string, replyToMsgId uint32) sendMessage
 	msg[`text`] = text
 
 	if replyToMsgId != 0 {
-		msg[`reply_to_message_id`] = strconv.FormatInt(int64(replyToMsgId), 10)
+		msg[`reply_to_message_id`] = replyToMsgId
+	}
+
+	return msg
+}
+
+type SendMessageOptionsStruct struct {
+	ChatId       int
+	Text         string
+	ReplyToMsgId int
+}
+
+// NewSendMessageWithOptions generates send message according to input options
+func NewSendMessageWithOptions(options SendMessageOptionsStruct) sendMessageStruct {
+	msg := make(sendMessageStruct)
+
+	msg[`parse_mode`] = `Markdown`
+	msg[`disable_notification`] = `true`
+	msg[`disable_web_page_preview`] = `true`
+
+	msg[`chat_id`] = options.ChatId
+	msg[`text`] = options.Text
+
+	if options.ReplyToMsgId != 0 {
+		msg[`reply_to_message_id`] = options.ReplyToMsgId
 	}
 
 	return msg

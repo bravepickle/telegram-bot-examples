@@ -152,7 +152,7 @@ func (l *Logger) paramsToJson(params ...interface{}) (jsonParams []interface{}) 
 		switch param.(type) {
 		default:
 			jsonParams = append(jsonParams, param) // keep as it is
-		case map[string]string, map[int]string:
+		case map[string]string, map[int]string, map[string]interface{}:
 			jsonParams = append(jsonParams, encodeToJson(param)) // convert
 		}
 	}

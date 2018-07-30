@@ -71,5 +71,5 @@ func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 
 	logger.Debug(`Running %s command`, c.GetName())
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, `Sorry, action was not detected`+emojiColdSweat, options.Upd.Message.MessageId), nil
+	return NewSendMessage(options.Upd.Message.Chat.Id, `Sorry, could not recognize this action`+emojiColdSweat, options.Upd.Message.MessageId), nil
 }
