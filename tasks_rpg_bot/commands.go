@@ -176,7 +176,12 @@ func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 }
 
 func (c AddTaskBotCommandStruct) IsRunning(options RunOptionsStruct) bool {
-	_, ok := c.transactions[options.Upd.Message.From.Id]
+	chatId := options.Upd.Message.Chat.Id
+	userId := options.Upd.Message.From.Id
+
+	//if trans, ok := c.transactions[chatId][userId];
+
+	_, ok := c.transactions[chatId][userId]
 
 	return ok
 }

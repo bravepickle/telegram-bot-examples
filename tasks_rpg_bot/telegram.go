@@ -221,21 +221,49 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 
 	//var text = upd.Message.Text
 	var hasProcessed = true
-	for _, ent := range options.Upd.Message.Entities {
-		options.Ent = ent
-		sendMessage, found := r.processMessageEntity(options)
 
-		if found {
-			hasProcessed = true
+	if len(options.Upd.Message.Entities) > 0 {
+		logger.Debug(`Processing message entities...`)
+		for _, ent := range options.Upd.Message.Entities {
+			options.Ent = ent
+			sendMessage, found := r.processMessageEntity(options)
 
-			r.sendMessage(sendMessage, options)
+			if found {
+				hasProcessed = true
+
+				r.sendMessage(sendMessage, options)
+			}
+		}
+	} else {
+		for _, botCommand := range r.commands {
+			if botCommand.IsRunning(options) {
+				//// TODO: reset all running commands for user and reinit current one if newly called??
+				//found = true
+				sendMessage, err := botCommand.Run(options)
+				if err != nil {
+					logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
+				}
+
+				hasProcessed = true
+
+				r.sendMessage(sendMessage, options)
+
+				//logger.Fatal(`Found running options for command %s`, botCommand.GetName())
+				//
+				//break
+			}
 		}
 	}
+
+	// todo: update index even if no text messages can be processed
 
 	// TODO: always single send-message for message+message entities?
 
 	if !hasProcessed {
 		logger.Debug(`No new messages...`)
+	} else if options.Upd.UpdateId >= r.routingUpdate.Offset {
+		logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, options.Upd.UpdateId+1)
+		r.routingUpdate.Offset = options.Upd.UpdateId + 1
 	}
 }
 
@@ -249,10 +277,10 @@ func (r *TelegramBotsApiStruct) sendMessage(sendMessage sendMessageStruct, optio
 	}
 	//sentOnceSuccessfully = true
 	// TODO: add mutex, locks or something similar to avoid competing updates of this field
-	if options.Upd.UpdateId >= r.routingUpdate.Offset {
-		logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, options.Upd.UpdateId+1)
-		r.routingUpdate.Offset = options.Upd.UpdateId + 1
-	}
+	//if options.Upd.UpdateId >= r.routingUpdate.Offset {
+	//	logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, options.Upd.UpdateId+1)
+	//	r.routingUpdate.Offset = options.Upd.UpdateId + 1
+	//}
 }
 
 func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct) (sendMessage sendMessageStruct, found bool) {
