@@ -163,6 +163,7 @@ func NewStartBotCommand() (model StartBotCommandStruct) {
 	return model
 }
 func NewAddTaskBotCommand() (model AddTaskBotCommandStruct) {
+	model.transactions = make(map[uint32]map[uint32]Transactional) // TODO: fix it somehow, see https://stackoverflow.com/questions/40823315/go-x-does-not-implement-y-method-has-a-pointer-receiver
 	model.Init()
 
 	return model

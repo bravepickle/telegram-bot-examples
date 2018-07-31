@@ -81,8 +81,13 @@ func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruc
 type AddTaskBotCommandStruct struct {
 	BotCommand
 
-	// list of transactions that are running and not finished
-	transactions map[uint32]Transactional
+	// list of transactions that are running and not finished: v[userId][chatId] = Transactional
+	/** ALTERNATIVE FORMAT, but unknown how to convert this to JSON: type Key struct {
+	    Path, Country string
+	}
+	hits := make(map[Key]int
+		**/
+	transactions map[uint32]map[uint32]Transactional
 }
 
 func (c AddTaskBotCommandStruct) GetName() string {
@@ -90,17 +95,30 @@ func (c AddTaskBotCommandStruct) GetName() string {
 }
 
 func (c AddTaskBotCommandStruct) Init() {
-	logger.Debug(`!!! Init bot command %s`, c.GetName())
-	c.transactions = make(map[uint32]Transactional)
+	//logger.Debug(`!!! Init bot command %s`, c.GetName())
+	c.transactions = make(map[uint32]map[uint32]Transactional)
 }
 
 func (c AddTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Transactional {
-	c.transactions = make(map[uint32]Transactional)
 
-	if trans, ok := c.transactions[options.Upd.Message.From.Id]; !ok { // check if set
-		c.transactions[options.Upd.Message.From.Id] = NewAddTaskTransaction()
+	//logger.Debug(`Transaction value: %T %v`, c.transactions, c.transactions)
+	//c.transactions = make(map[uint32]Transactional)
 
-		return c.transactions[options.Upd.Message.From.Id]
+	//c.transactions = make(map[uint32]map[uint32]Transactional)
+
+	chatId := options.Upd.Message.Chat.Id
+	userId := options.Upd.Message.From.Id
+
+	if trans, ok := c.transactions[chatId][userId]; !ok { // check if set
+		if _, ok := c.transactions[chatId]; !ok {
+			c.transactions[chatId] = make(map[uint32]Transactional)
+		}
+
+		//c.transactions[chatId] := make()
+
+		c.transactions[chatId][userId] = NewAddTaskTransaction()
+
+		return c.transactions[chatId][userId]
 	} else {
 		return trans
 	}
