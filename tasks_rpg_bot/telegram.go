@@ -197,58 +197,72 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 	// TODO: edited_message handle, inline_query
 
-	sentOnceSuccessfully := false
-
-	var runOptions RunOptionsStruct
-	var sendMessage sendMessageStruct
+	//sentOnceSuccessfully := false
 
 	for _, upd := range updates.Result {
-		// TODO: use go channels for each update and read channel for results of sentOnceSuccessfully
-		// for parallel computation
-		logger.Info(`Handling update ID=%d, Message=%d`, upd.UpdateId, upd.Message.MessageId)
-		logger.Debug(`> %s`, upd.Message.Text)
-
-		runOptions.Upd = upd
-
-		//var text = upd.Message.Text
-		for _, ent := range upd.Message.Entities {
-			runOptions.Ent = ent
-			sendMessage = r.processMessageEntity(runOptions)
-		}
-
-		if len(sendMessage) == 0 {
-			logger.Debug(`No new messages...`)
-
-			continue
-		}
-
-		logger.Info(`Response message: %s`, encodeToJson(sendMessage))
-
-		if _, ok := r.RequestManager.SendPostJsonRequest(r.routingSend.Uri(), sendMessage); !ok {
-			logger.Error("Failed to send message: %s", encodeToJson(sendMessage))
-		}
-
-		sentOnceSuccessfully = true
-
-		if upd.UpdateId >= r.routingUpdate.Offset {
-			logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, upd.UpdateId+1)
-			r.routingUpdate.Offset = upd.UpdateId + 1
-		}
+		// TODO: add limit of maximum parallel requests to API in parallel and wait until available
+		go r.processSingleUpdate(RunOptionsStruct{Upd: upd})
 	}
 
 	logger.Debug(`Finished polling for updates.`)
 
-	return sentOnceSuccessfully
+	//return sentOnceSuccessfully
+
+	return true
 }
 
-func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct) (sendMessage sendMessageStruct) {
+func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
+	//var sendMessage sendMessageStruct
+
+	// TODO: use go channels for each update and read channel for results of sentOnceSuccessfully
+	// for parallel computation
+	logger.Info(`Handling update ID=%d, Message=%d`, options.Upd.UpdateId, options.Upd.Message.MessageId)
+	logger.Debug(`> %s`, options.Upd.Message.Text)
+
+	//var text = upd.Message.Text
+	var hasProcessed = true
+	for _, ent := range options.Upd.Message.Entities {
+		options.Ent = ent
+		sendMessage, found := r.processMessageEntity(options)
+
+		if found {
+			hasProcessed = true
+
+			r.sendMessage(sendMessage, options)
+		}
+	}
+
+	// TODO: always single send-message for message+message entities?
+
+	if !hasProcessed {
+		logger.Debug(`No new messages...`)
+	}
+}
+
+func (r *TelegramBotsApiStruct) sendMessage(sendMessage sendMessageStruct, options RunOptionsStruct) {
+	if logger.DebugLevel() {
+		logger.Debug(`Message to send: %s`, encodeToJson(sendMessage))
+	}
+
+	if _, ok := r.RequestManager.SendPostJsonRequest(r.routingSend.Uri(), sendMessage); !ok {
+		logger.Error("Failed to send message: %s", encodeToJson(sendMessage))
+	}
+	//sentOnceSuccessfully = true
+	// TODO: add mutex, locks or something similar to avoid competing updates of this field
+	if options.Upd.UpdateId >= r.routingUpdate.Offset {
+		logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, options.Upd.UpdateId+1)
+		r.routingUpdate.Offset = options.Upd.UpdateId + 1
+	}
+}
+
+func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct) (sendMessage sendMessageStruct, found bool) {
 	var err error
+	found = false
 
 	if runOptions.Ent.Type == `bot_command` {
 		cmd := runOptions.Upd.Message.Text[runOptions.Ent.Offset : runOptions.Ent.Offset+runOptions.Ent.Length]
 		logger.Debug(`Is bot command: %s`, cmd)
 
-		found := false
 		for _, botCommand := range r.commands {
 			if botCommand.IsRunning(runOptions) || cmd == botCommand.GetName() {
 				// TODO: reset all running commands for user and reinit current one if newly called??
@@ -275,7 +289,7 @@ func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct
 		logger.Info(`Failed to handle message entity type: %s`, runOptions.Ent.Type)
 	}
 
-	return sendMessage
+	return sendMessage, found
 }
 
 func NewSendMessage(chatId uint32, text string, replyToMsgId uint32) sendMessageStruct {

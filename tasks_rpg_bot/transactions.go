@@ -14,6 +14,7 @@ type Transactional interface {
 	Run(options RunOptionsStruct) (sendMessageStruct, bool)
 	//Complete() bool
 	//Commit() bool
+	// TODO: for each user -> chat store values
 }
 
 type TransactionalStep interface {
