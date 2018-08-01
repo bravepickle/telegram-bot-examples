@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"time"
 )
+
+const dateFormat = `YYYY-mm-dd`
+const answerNo = "no"
 
 type Transactional interface {
 	GetName() string
@@ -193,9 +197,10 @@ func (t *AddTaskTransactionStruct) Init() {
 
 	t.steps = append(t.steps, &TitleStep{})
 	t.steps = append(t.steps, &ExperienceStep{})
+	t.steps = append(t.steps, &DateExpirationStep{})
+	t.steps = append(t.steps, &TaskDefaultStep{})
 	t.steps = append(t.steps, &SummaryStep{}) // TODO: add mapping for fields or use toString in steps to convert
 	t.steps = append(t.steps, &ConfirmStep{})
-	t.steps = append(t.steps, &TaskDefaultStep{})
 }
 
 // =========== ExperienceStep
@@ -265,10 +270,44 @@ func (t TitleStep) Revert(tr Transactional, options RunOptionsStruct) {
 	tr.SetDataValue(`task`, task)
 }
 
-// =========== TaskDefaultStep
-type TaskDefaultStep struct {
-	//BasicStep
+// =========== DateExpirationStep
+type DateExpirationStep struct{}
+
+func (t DateExpirationStep) GetName() string {
+	return `date-expiration`
 }
+
+func (t DateExpirationStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
+	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
+		if answerNo != options.Upd.Message.Text {
+			dt, err := time.Parse("2006-01-02", options.Upd.Message.Text)
+			if err != nil {
+				logger.Error(`Failed to parse date "%s": %s`, options.Upd.Message.Text, err)
+
+				return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to read date. Please, try again`, 0), true
+			}
+
+			task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+			task.DateExpiration = dt
+			tr.SetDataValue(`task`, task)
+		}
+
+		return tr.RunNextStep(options)
+	}
+
+	text := fmt.Sprintf(`Please, enter expiration date for the task in format "%s" or write "%s"`, dateFormat, answerNo)
+
+	return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
+}
+
+func (t DateExpirationStep) Revert(tr Transactional, options RunOptionsStruct) {
+	//task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	//task.DateExpiration = ``
+	//tr.SetDataValue(`task`, task)
+}
+
+// =========== TaskDefaultStep
+type TaskDefaultStep struct{}
 
 func (t TaskDefaultStep) GetName() string {
 	return `task-default`
@@ -278,6 +317,8 @@ func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (sendMe
 	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
 	task.UserId = int(options.Upd.Message.From.Id)
 	task.Status = statusPending
+	task.DateUpdated = time.Now()
+	task.DateCreated = time.Now()
 	tr.SetDataValue(`task`, task)
 
 	return tr.RunNextStep(options)

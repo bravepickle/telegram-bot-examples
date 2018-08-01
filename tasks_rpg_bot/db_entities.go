@@ -1,10 +1,19 @@
 package main
 
-import "database/sql"
+import (
+	"database/sql"
+	"time"
+)
 
 const statusPending = `pending`
 const statusDone = `done`
 const statusCanceled = `canceled`
+
+//type DbTime *time.Time
+//
+//func (t DbTime) String() string {
+//	t.For
+//}
 
 // list of all available entities for application
 
@@ -35,23 +44,13 @@ type TaskDbEntity struct {
 	Status         string
 	Exp            int
 	Description    string
-	DateExpiration string
-	DateCreated    string
-	DateUpdated    string
+	DateExpiration time.Time
+	DateCreated    time.Time
+	DateUpdated    time.Time
 
 	DbEntityStruct
 	//DbEntityInterface
 }
-
-//func (e *TaskDbEntity) Init() {
-//	e.InitSql = "CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY, user_id TEXT, title TEXT, description TEXT, status TEXT, exp INTEGER, date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)"
-//}
-
-//
-//func (e *TaskDbEntity) Save() {
-//
-//	dbManager.db.
-//}
 
 func (e *TaskDbEntity) Load(sqlRows *sql.Rows) error {
 	// TODO: list fields to change params list
@@ -65,18 +64,15 @@ func (e *TaskDbEntity) Save() bool {
 	}
 
 	//database.Prepare("INSERT INTO task (user_id, title, status, description, status, exp) VALUES (?, ?, ?, ?, ?, ?)")
-	//
-	//fmt.Println(err)
-	//
-	////statement, _ := database.Prepare("INSERT INTO task (id, title, status) VALUES (?, ?, ?)")
-	statement, err := dbManager.db.Prepare("INSERT INTO task (user_id, title, status, description, exp, date_expiration) VALUES (?, ?, ?, ?, ?, ?)")
+	statement, err := dbManager.db.Prepare(
+		"INSERT INTO task (user_id, title, status, description, exp, date_expiration, date_created, date_updated) " +
+			"VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
 
 	if err != nil {
 		logger.Error(`SQL error: %s`, err)
 	}
 
-	result, err := statement.Exec(e.UserId, e.Title, e.Status, e.Description, e.Exp, e.DateExpiration)
-
+	result, err := statement.Exec(e.UserId, e.Title, e.Status, e.Description, e.Exp, e.DateExpiration, e.DateCreated.Format(`2016-01-02`), e.DateUpdated.Format(`2016-01-02`))
 	if err != nil {
 		logger.Error(`SQL error: %s`, err)
 
@@ -85,7 +81,6 @@ func (e *TaskDbEntity) Save() bool {
 
 	// TODO: other values update as well (refresh entity)
 	lastInsertId, err := result.LastInsertId()
-
 	if err != nil {
 		logger.Error(`SQL last insert ID read error: %s`, err)
 
@@ -93,7 +88,6 @@ func (e *TaskDbEntity) Save() bool {
 	}
 
 	e.Id = int(lastInsertId)
-
 	if logger.DebugLevel() {
 		logger.Debug(`SQL result: %s`, encodeToJson(e))
 	}
