@@ -172,6 +172,7 @@ func (r *TelegramBotsApiStruct) processTaskNotifications() {
 
 	if len(tasks) > 0 {
 		// TODO: send message and somehow define to which user/chat to send it
+		// TODO: notify on expired and prompt on what to do - prolong or cancel with xp loss
 
 		tasksByUser := make(map[int][]TaskDbEntity)
 		for _, task := range tasks {
@@ -182,7 +183,7 @@ func (r *TelegramBotsApiStruct) processTaskNotifications() {
 			msg := "*Tasks TODO:*\n"
 			// TODO: order by date or priority, exp
 			for _, task := range userTasks {
-				msg += fmt.Sprintf("  _%s_: expires at \"%s\", gain \"%d\" exp\n", task.Title, task.DateExpiration, task.Exp)
+				msg += fmt.Sprintf("  _%s_: expires at \"%s\", gain \"%d\" XP\n", task.Title, task.DateExpiration, task.Exp)
 			}
 
 			// TODO: can we use userId as chat id?
