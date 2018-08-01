@@ -342,6 +342,19 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageS
 		//	`Your title will be: ` + text, options.Upd.Message.MessageId), true
 	}
 
+	if options.Ent.Length > 0 && len(options.Upd.Message.Text) > options.Ent.Length {
+		//logger.Debug(`Reading title from command line`)
+
+		task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+		task.Title = options.Upd.Message.Text[options.Ent.Length+1:]
+		tr.SetDataValue(`task`, task)
+
+		return tr.RunNextStep(options)
+
+		//logger.Fatal(`Found string: %s`, str)
+
+	}
+
 	return NewSendMessage(options.Upd.Message.Chat.Id,
 		`Please, enter title for the task`, 0), true
 
@@ -385,7 +398,7 @@ func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (sendMe
 	//Description    string
 	//DateExpiration string
 
-	return tr.RunNextStep(options)
+	//return tr.RunNextStep(options)
 
 	//nextStep := tr.Next() // next step to do...
 	//
