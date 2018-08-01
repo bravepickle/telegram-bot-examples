@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 type Transactional interface {
 	GetName() string
@@ -241,9 +244,21 @@ func (t ExperienceStep) GetName() string {
 
 func (t ExperienceStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
 	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
-		tr.SetDataValue(`exp`, options.Upd.Message.Text)
+		//task := tr.GetDataValue(`task`, &TaskDbEntity{})
+		task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
 
-		return tr.RunNextStep(options)
+		var err error
+
+		task.Exp, err = strconv.Atoi(options.Upd.Message.Text)
+
+		if err == nil {
+			tr.SetDataValue(`task`, task)
+
+			return tr.RunNextStep(options)
+		}
+
+		logger.Info(`Failed to validate exp value: %s`, err)
+		//tr.SetDataValue(`exp`, options.Upd.Message.Text)
 
 		//text := tr.GetDataValue(`exp`, ``).(string)
 
@@ -258,7 +273,10 @@ func (t ExperienceStep) Run(tr Transactional, options RunOptionsStruct) (sendMes
 }
 
 func (t ExperienceStep) Revert(tr Transactional, options RunOptionsStruct) {
-	tr.SetDataValue(`title`, nil) // TODO: revert properly - check state and decide what to do
+	//tr.SetDataValue(`title`, nil) // TODO: revert properly - check state and decide what to do
+	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	task.Exp = 0
+	tr.SetDataValue(`task`, task)
 }
 
 // =========== TitleStep
@@ -285,7 +303,11 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageS
 	//logger.Info(`>>>>> Reading title or prompt? %s`, encodeToJson(options))
 
 	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
-		tr.SetDataValue(`title`, options.Upd.Message.Text)
+		//tr.SetDataValue(`title`, options.Upd.Message.Text)
+
+		task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+		task.Title = options.Upd.Message.Text
+		tr.SetDataValue(`task`, task)
 
 		return tr.RunNextStep(options)
 
@@ -316,7 +338,11 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageS
 }
 
 func (t TitleStep) Revert(tr Transactional, options RunOptionsStruct) {
-	tr.SetDataValue(`title`, nil) // TODO: revert properly - check state and decide what to do
+	//tr.SetDataValue(`title`, nil) // TODO: revert properly - check state and decide what to do
+
+	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	task.Title = ``
+	tr.SetDataValue(`task`, task)
 }
 
 // =========== TaskDefaultStep
@@ -330,8 +356,15 @@ func (t TaskDefaultStep) GetName() string {
 
 func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
 	// TODO: set task db entity instead - more handy!
-	tr.SetDataValue(`user_id`, options.Upd.Message.From.Id)
-	tr.SetDataValue(`status`, statusPending)
+	//tr.SetDataValue(`user_id`, options.Upd.Message.From.Id)
+	//tr.SetDataValue(`status`, statusPending)
+
+	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	task.UserId = int(options.Upd.Message.From.Id)
+	task.Status = statusPending
+	tr.SetDataValue(`task`, task)
+
+	return tr.RunNextStep(options)
 
 	//Id             int
 	//UserId         int
@@ -361,8 +394,13 @@ func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (sendMe
 }
 
 func (t TaskDefaultStep) Revert(tr Transactional, options RunOptionsStruct) {
-	tr.SetDataValue(`user_id`, 0)
-	tr.SetDataValue(`status`, ``)
+	//tr.SetDataValue(`user_id`, 0)
+	//tr.SetDataValue(`status`, ``)
+
+	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	task.UserId = 0
+	task.Status = ``
+	tr.SetDataValue(`task`, task)
 }
 
 // =========== SummaryStep
@@ -396,7 +434,16 @@ func (t *SummaryStep) Run(tr Transactional, options RunOptionsStruct) (sendMessa
 		// TODO: use params mapping and values type check
 
 		for name, value := range data {
-			text += fmt.Sprintf("  %s: %v\n", name, value)
+
+			switch valType := value.(type) {
+			case DbEntityInterface:
+				text += fmt.Sprintf("  %s: `%s`\n", name, encodeToJson(value))
+			default:
+				text += fmt.Sprintf("  %s: (%s) `%v`\n", name, valType, value)
+
+			}
+
+			//text += fmt.Sprintf("  %s: `(%T) [%v] %v`\n", name, value, value.(DbEntityInterface), value)
 		}
 
 		tr.SetDataValue(`message_text_prepend`, text) // a hack to avoid sending message right away. Will receive in confirm msg
