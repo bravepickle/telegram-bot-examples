@@ -8,6 +8,9 @@ type Transactional interface {
 	GetData() map[string]interface{}
 	SetDataValue(name string, value interface{})
 	GetDataValue(name string, defaultValue interface{}) interface{}
+	GetFlashValue(name string, defaultValue interface{}) interface{} // get value and delete it from data array
+	SetFlashValue(name string, value interface{})                    // get value and delete it from data array
+	DelDataValue(name string) bool                                   // return true if found and deleted
 	Init()
 	Current() TransactionalStep
 	//GetSteps() []string
@@ -153,6 +156,33 @@ func (t *TransactionStruct) GetDataValue(name string, defaultValue interface{}) 
 	}
 
 	return defaultValue
+}
+
+func (t *TransactionStruct) DelDataValue(name string) bool {
+	if _, ok := t.data[name]; ok {
+
+		delete(t.data, name)
+
+		return true
+	}
+
+	return false
+}
+
+func (t *TransactionStruct) SetFlashValue(name string, value interface{}) {
+	t.SetDataValue(name, value)
+}
+
+func (t *TransactionStruct) GetFlashValue(name string, defaultValue interface{}) interface{} {
+	value := t.GetDataValue(name, nil)
+
+	if value == nil {
+		return defaultValue
+	}
+
+	t.DelDataValue(name) // defer?
+
+	return value
 }
 
 func (t *TransactionStruct) Complete(options RunOptionsStruct) (sendMessageStruct, bool) {
@@ -403,7 +433,8 @@ func (t *SummaryStep) Run(tr Transactional, options RunOptionsStruct) (sendMessa
 
 func (t *SummaryStep) Revert(tr Transactional, options RunOptionsStruct) {
 	t.Shown = false
-	tr.SetDataValue(`message_text_prepend`, ``)
+	//tr.SetDataValue(`message_text_prepend`, ``)
+	tr.DelDataValue(`message_text_prepend`)
 	//tr.SetDataValue(`is_summary_shown`, false)
 }
 
@@ -431,12 +462,13 @@ func (t *ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (sendMessa
 
 		// TODO: on typing NO go to step 1
 
-		prependText := tr.GetDataValue(`message_text_prepend`, ``).(string)
+		prependText := tr.GetFlashValue(`message_text_prepend`, ``).(string)
 
 		var text string
 
 		if prependText != `` {
-			tr.SetDataValue(`message_text_prepend`, ``) // TODO: add DelDataValue instead
+			//tr.DelDataValue(`message_text_prepend`)
+			//tr.SetDataValue(`message_text_prepend`, ``) // TODO: add DelDataValue instead
 
 			text = fmt.Sprintf("%s\n*Proceed?* %s/%s", prependText, yes, no)
 		} else {
