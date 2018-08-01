@@ -7,6 +7,7 @@ import (
 )
 
 const dateFormat = `YYYY-mm-dd`
+const dateFormatShort = `dd/mm`
 const answerNo = "no"
 
 type Transactional interface {
@@ -163,12 +164,13 @@ func (t *TransactionStruct) Complete(options RunOptionsStruct) (sendMessageStruc
 		switch value.(type) {
 		case DbEntityInterface:
 			entity := value.(DbEntityInterface)
-
-			//logger.Info(` >>>>>> Entity data to save "%T" to DB: %s`, entity, encodeToJson(entity))
-
 			if !entity.Save() {
 				logger.Error(`Failed to save data of "%T" to DB: %s`, entity, encodeToJson(entity))
 			}
+
+			t.Reset()
+
+			return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to save data. Please, try again lager`, 0), true
 
 		default:
 			// do nothing
@@ -280,22 +282,33 @@ func (t DateExpirationStep) GetName() string {
 func (t DateExpirationStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
 	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
 		if answerNo != options.Upd.Message.Text {
-			dt, err := time.Parse("2006-01-02", options.Upd.Message.Text)
-			if err != nil {
-				logger.Error(`Failed to parse date "%s": %s`, options.Upd.Message.Text, err)
+			dt, err := time.Parse("02/01", options.Upd.Message.Text)
 
-				return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to read date. Please, try again`, 0), true
+			// TODO: add validation date in future
+			if err != nil {
+				dt, err = time.Parse("2006-01-02", options.Upd.Message.Text)
+				if err != nil {
+					logger.Error(`Failed to parse date "%s": %s`, options.Upd.Message.Text, err)
+
+					return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to read date. Please, try again`, 0), true
+				}
+			} else {
+				dt = dt.AddDate(time.Now().Year(), 0, 0) // append current year
+
+				if dt.Before(time.Now()) {
+					dt = dt.AddDate(1, 0, 0) // append next year if date was already exceeded
+				}
 			}
 
 			task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
-			task.DateExpiration = dt
+			task.DateExpiration = NewDbTime(dt)
 			tr.SetDataValue(`task`, task)
 		}
 
 		return tr.RunNextStep(options)
 	}
 
-	text := fmt.Sprintf(`Please, enter expiration date for the task in format "%s" or write "%s"`, dateFormat, answerNo)
+	text := fmt.Sprintf(`Please, enter expiration date for the task (formats: "%s", "%s") or write "%s"`, dateFormat, dateFormatShort, answerNo)
 
 	return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
 }
@@ -317,8 +330,8 @@ func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (sendMe
 	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
 	task.UserId = int(options.Upd.Message.From.Id)
 	task.Status = statusPending
-	task.DateUpdated = time.Now()
-	task.DateCreated = time.Now()
+	task.DateUpdated = NewDbTime(time.Now())
+	task.DateCreated = NewDbTime(time.Now())
 	tr.SetDataValue(`task`, task)
 
 	return tr.RunNextStep(options)

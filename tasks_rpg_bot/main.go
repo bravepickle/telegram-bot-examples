@@ -35,6 +35,8 @@ func main() {
 
 	logger = initLogger()
 	dbManager = NewDbManager(appConfig.GetDbDsn())
+
+	//logger.Fatal(year)
 	//
 	//database := dbManager.db
 

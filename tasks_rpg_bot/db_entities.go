@@ -9,11 +9,17 @@ const statusPending = `pending`
 const statusDone = `done`
 const statusCanceled = `canceled`
 
-//type DbTime *time.Time
-//
-//func (t DbTime) String() string {
-//	t.For
-//}
+type DbTime struct{ time.Time }
+
+func (t DbTime) String() string {
+	return t.Format(`2006-01-02 15:04:05`)
+}
+
+func NewDbTime(t time.Time) DbTime {
+	// change timezone to local time to have single tz everywhere
+	// maximum precision - second
+	return DbTime{Time: t.Local().Round(time.Second)}
+}
 
 // list of all available entities for application
 
@@ -44,9 +50,9 @@ type TaskDbEntity struct {
 	Status         string
 	Exp            int
 	Description    string
-	DateExpiration time.Time
-	DateCreated    time.Time
-	DateUpdated    time.Time
+	DateExpiration DbTime
+	DateCreated    DbTime
+	DateUpdated    DbTime
 
 	DbEntityStruct
 	//DbEntityInterface
@@ -72,7 +78,7 @@ func (e *TaskDbEntity) Save() bool {
 		logger.Error(`SQL error: %s`, err)
 	}
 
-	result, err := statement.Exec(e.UserId, e.Title, e.Status, e.Description, e.Exp, e.DateExpiration, e.DateCreated.Format(`2016-01-02`), e.DateUpdated.Format(`2016-01-02`))
+	result, err := statement.Exec(e.UserId, e.Title, e.Status, e.Description, e.Exp, e.DateExpiration.String(), e.DateCreated.String(), e.DateUpdated.String())
 	if err != nil {
 		logger.Error(`SQL error: %s`, err)
 
