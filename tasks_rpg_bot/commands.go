@@ -13,7 +13,7 @@ type BotCommander interface {
 	Run(options RunOptionsStruct) (sendMessageStruct, error)
 	GetName() string
 	IsRunning(options RunOptionsStruct) bool // return true if command is transactional and in process of running, e.g. waiting for user input
-	Init()
+	//Init()
 }
 
 type RunOptionsStruct struct {
@@ -29,8 +29,8 @@ func (c BotCommand) IsRunning(options RunOptionsStruct) bool {
 	return false
 }
 
-func (c BotCommand) Init() {
-}
+//func (c BotCommand) Init() {
+//}
 
 type StartBotCommandStruct struct {
 	BotCommand
@@ -94,10 +94,10 @@ func (c AddTaskBotCommandStruct) GetName() string {
 	return `/add`
 }
 
-func (c AddTaskBotCommandStruct) Init() {
-	//logger.Debug(`!!! Init bot command %s`, c.GetName())
-	c.transactions = make(map[uint32]map[uint32]Transactional)
-}
+//func (c AddTaskBotCommandStruct) Init() {
+//	//logger.Debug(`!!! Init bot command %s`, c.GetName())
+//	//c.transactions = make(map[uint32]map[uint32]Transactional)
+//}
 
 func (c AddTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Transactional {
 

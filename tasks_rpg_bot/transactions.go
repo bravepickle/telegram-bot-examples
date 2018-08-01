@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Transactional interface {
 	GetName() string
 	//// GetData returns transactional data
@@ -13,7 +15,9 @@ type Transactional interface {
 	Prev() TransactionalStep
 	Reset()
 	Run(options RunOptionsStruct) (sendMessageStruct, bool)
-	//Complete() bool
+	RunNextStep(options RunOptionsStruct) (sendMessageStruct, bool)
+	Restart(options RunOptionsStruct) (sendMessageStruct, bool)
+	Complete(options RunOptionsStruct) (sendMessageStruct, bool) // call when everything is set and we want to finish transaction
 	//Commit() bool
 	// TODO: for each user -> chat store values
 }
@@ -22,6 +26,7 @@ type TransactionalStep interface {
 	GetName() string
 	Run(t Transactional, options RunOptionsStruct) (sendMessageStruct, bool)
 	Revert(t Transactional, options RunOptionsStruct) // revert run step
+	//Set(name string, value interface{}) // set value for the step
 }
 
 // =========== TransactionStruct
@@ -83,6 +88,43 @@ func (t *TransactionStruct) Run(options RunOptionsStruct) (sendMessageStruct, bo
 	//return nil, false
 }
 
+func (t *TransactionStruct) RunNextStep(options RunOptionsStruct) (sendMessageStruct, bool) {
+	nextStep := t.Next() // next step to do...
+
+	if nextStep == nil {
+		// TODO: save task data! transaction.Complete() or something similar : save + delete completed transaction
+
+		return t.Complete(options)
+
+		//return NewSendMessage(options.Upd.Message.Chat.Id,
+		//	`All data is filled: `+string(encodeToJson(t.GetData())), 0), true
+	}
+
+	options.Upd.Message.Text = `` // hack to start processing new step
+
+	return nextStep.Run(t, options)
+}
+
+func (t *TransactionStruct) Restart(options RunOptionsStruct) (sendMessageStruct, bool) {
+	t.Reset()
+	t.Init()
+
+	step := t.Current() // next step to do...
+
+	if step == nil {
+		// TODO: save task data! transaction.Complete() or something similar : save + delete completed transaction
+
+		return t.Complete(options)
+
+		//return NewSendMessage(options.Upd.Message.Chat.Id,
+		//	`All data is filled: `+string(encodeToJson(t.GetData())), 0), true
+	}
+
+	options.Upd.Message.Text = `` // hack to start processing new step
+
+	return step.Run(t, options)
+}
+
 //func (t *TransactionStruct) RunStep() {
 //	//if step, ok := t.steps[t.currentStepIndex]; !ok {
 //	//if step := t.steps[t.currentStepIndex]; !ok {
@@ -113,6 +155,16 @@ func (t *TransactionStruct) GetDataValue(name string, defaultValue interface{}) 
 	return defaultValue
 }
 
+func (t *TransactionStruct) Complete(options RunOptionsStruct) (sendMessageStruct, bool) {
+
+	return NewSendMessage(options.Upd.Message.Chat.Id, `TBD: transaction is completed `+string(encodeToJson(t.GetData())), 0), true
+	//if value, ok := t.data[name]; ok {
+	//	return value
+	//}
+	//
+	//return defaultValue
+}
+
 // =========== AddTaskTransactionStruct
 
 type AddTaskTransactionStruct struct {
@@ -124,10 +176,14 @@ func (t *AddTaskTransactionStruct) GetName() string {
 }
 
 func (t *AddTaskTransactionStruct) Init() {
+	logger.Debug(`>>>>>>>>>>> Init task "%s"`, t.GetName())
 	t.Reset()
 
 	t.steps = append(t.steps, TitleStep{})
 	t.steps = append(t.steps, ExperienceStep{})
+	t.steps = append(t.steps, SummaryStep{}) // TODO: add mapping for fields or use toString in steps to convert
+	t.steps = append(t.steps, ConfirmStep{})
+	t.steps = append(t.steps, TaskDefaultStep{})
 }
 
 //func (t *AddTaskTransactionStruct) Run() bool {
@@ -135,11 +191,18 @@ func (t *AddTaskTransactionStruct) Init() {
 //
 //	return true
 //}
+// =========== BasicStep
+type BasicStep struct {
+}
+
+//func () Set(name string, value interface{}) {
+//	// do nothing. override in dependencies
+//}
 
 // =========== ExperienceStep
 //"CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT, description TEXT, status TEXT, exp INTEGER, date_expiration TEXT DEFAULT '', date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)",
 type ExperienceStep struct {
-	TransactionalStep
+	BasicStep
 }
 
 func (t ExperienceStep) GetName() string {
@@ -150,19 +213,7 @@ func (t ExperienceStep) Run(tr Transactional, options RunOptionsStruct) (sendMes
 	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
 		tr.SetDataValue(`exp`, options.Upd.Message.Text)
 
-		nextStep := tr.Next() // next step to do...
-
-		if nextStep == nil {
-			// TODO: properly process here. What should we do at the end?
-			//return nil, true
-
-			return NewSendMessage(options.Upd.Message.Chat.Id,
-				`All data is filled: `+string(encodeToJson(tr.GetData())), options.Upd.Message.MessageId), true
-		}
-
-		options.Upd.Message.Text = `` // hack to start processing new step
-
-		return nextStep.Run(tr, options)
+		return tr.RunNextStep(options)
 
 		//text := tr.GetDataValue(`exp`, ``).(string)
 
@@ -173,7 +224,7 @@ func (t ExperienceStep) Run(tr Transactional, options RunOptionsStruct) (sendMes
 	}
 
 	return NewSendMessage(options.Upd.Message.Chat.Id,
-		`Please, enter amount of experience gained for the completion task`, options.Upd.Message.MessageId), true
+		`Please, enter amount of experience gained for the completion task`, 0), true
 }
 
 func (t ExperienceStep) Revert(tr Transactional, options RunOptionsStruct) {
@@ -182,7 +233,7 @@ func (t ExperienceStep) Revert(tr Transactional, options RunOptionsStruct) {
 
 // =========== TitleStep
 type TitleStep struct {
-	TransactionalStep
+	BasicStep
 }
 
 func (t TitleStep) GetName() string {
@@ -206,19 +257,21 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageS
 	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
 		tr.SetDataValue(`title`, options.Upd.Message.Text)
 
-		nextStep := tr.Next() // next step to do...
+		return tr.RunNextStep(options)
 
-		if nextStep == nil {
-			// TODO: properly process here. What should we do at the end?
-			//return nil, true
-
-			return NewSendMessage(options.Upd.Message.Chat.Id,
-				`All data is filled: `+string(encodeToJson(tr.GetData())), options.Upd.Message.MessageId), true
-		}
-
-		options.Upd.Message.Text = `` // hack to start processing new step
-
-		return nextStep.Run(tr, options)
+		//nextStep := tr.Next() // next step to do...
+		//
+		//if nextStep == nil {
+		//	// TODO: properly process here. What should we do at the end?
+		//	//return nil, true
+		//
+		//	return NewSendMessage(options.Upd.Message.Chat.Id,
+		//		`All data is filled: `+string(encodeToJson(tr.GetData())), 0), true
+		//}
+		//
+		//options.Upd.Message.Text = `` // hack to start processing new step
+		//
+		//return nextStep.Run(tr, options)
 
 		//text := tr.GetDataValue(`title`, ``).(string)
 		//
@@ -227,13 +280,189 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageS
 	}
 
 	return NewSendMessage(options.Upd.Message.Chat.Id,
-		`Please, enter title for the task`, options.Upd.Message.MessageId), true
+		`Please, enter title for the task`, 0), true
 
 	//return true
 }
 
 func (t TitleStep) Revert(tr Transactional, options RunOptionsStruct) {
 	tr.SetDataValue(`title`, nil) // TODO: revert properly - check state and decide what to do
+}
+
+// =========== TaskDefaultStep
+type TaskDefaultStep struct {
+	BasicStep
+}
+
+func (t TaskDefaultStep) GetName() string {
+	return `task-default`
+}
+
+func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
+	// TODO: set task db entity instead - more handy!
+	tr.SetDataValue(`user_id`, options.Upd.Message.From.Id)
+	tr.SetDataValue(`status`, statusPending)
+
+	//Id             int
+	//UserId         int
+	//Title          string
+	//Status         string
+	//Exp            int
+	//Description    string
+	//DateExpiration string
+
+	return tr.RunNextStep(options)
+
+	//nextStep := tr.Next() // next step to do...
+	//
+	//if nextStep == nil {
+	//	// TODO: save task data! transaction.Complete() or something similar : save + delete completed transaction
+	//
+	//	return tr.Complete(options)
+	//
+	//	//return NewSendMessage(options.Upd.Message.Chat.Id,
+	//	//	`All data is filled: `+string(encodeToJson(tr.GetData())), 0), true
+	//}
+	//
+	//options.Upd.Message.Text = `` // hack to start processing new step
+	//
+	//return nextStep.Run(tr, options)
+
+}
+
+func (t TaskDefaultStep) Revert(tr Transactional, options RunOptionsStruct) {
+	tr.SetDataValue(`user_id`, 0)
+	tr.SetDataValue(`status`, ``)
+}
+
+// =========== SummaryStep
+type SummaryStep struct {
+	BasicStep
+
+	//Shown bool
+}
+
+func (t SummaryStep) GetName() string {
+	return `summary`
+}
+
+//func (t *SummaryStep) SetShown(value bool) {
+//	t.Shown = value
+//}
+
+func (t SummaryStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
+	shown := tr.GetDataValue(`is_summary_shown`, false).(bool)
+	logger.Debug(`>>>>>>>>>>>>>>>>>>>>>>>>> Task "%s" shown = %t`, t.GetName(), shown)
+
+	if !shown {
+		tr.SetDataValue(`is_summary_shown`, true)
+		text := "*Summary:* \n"
+		data := tr.GetData()
+
+		logger.Debug(`+++ >>>>>>>>>>>>>>>>>>>>>>>>> Task "%s" shown = %t`, t.GetName(), shown)
+
+		// TODO: use params mapping and values type check
+
+		for name, value := range data {
+			text += fmt.Sprintf("  %s: %v\n", name, value)
+		}
+
+		return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
+	}
+
+	//Id             int
+	//UserId         int
+	//Title          string
+	//Status         string
+	//Exp            int
+	//Description    string
+	//DateExpiration string
+
+	return tr.RunNextStep(options)
+
+	//nextStep := tr.Next() // next step to do...
+	//
+	//if nextStep == nil {
+	//	// TODO: save task data! transaction.Complete() or something similar : save + delete completed transaction
+	//
+	//	return tr.Complete(options)
+	//
+	//	//return NewSendMessage(options.Upd.Message.Chat.Id,
+	//	//	`All data is filled: `+string(encodeToJson(tr.GetData())), 0), true
+	//}
+	//
+	//options.Upd.Message.Text = `` // hack to start processing new step
+	//
+	//return nextStep.Run(tr, options)
+
+}
+
+func (t SummaryStep) Revert(tr Transactional, options RunOptionsStruct) {
+	tr.SetDataValue(`is_summary_shown`, false)
+}
+
+// =========== ConfirmStep
+type ConfirmStep struct {
+	TransactionalStep
+
+	Shown bool
+}
+
+func (t ConfirmStep) GetName() string {
+	return `summary`
+}
+
+func (t *ConfirmStep) SetShown(value bool) {
+	t.Shown = value
+}
+
+func (t ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
+	var yes, no = `y`, `n`
+	if !t.Shown {
+
+		//tr.Current().Se = true
+		//t.SetShown(true)
+
+		// TODO: on typing NO go to step 1
+
+		text := fmt.Sprintf("Proceed? %s/%s", yes, no)
+
+		return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
+	}
+
+	if options.Upd.Message.Text == no {
+		return tr.Restart(options)
+	}
+
+	//Id             int
+	//UserId         int
+	//Title          string
+	//Status         string
+	//Exp            int
+	//Description    string
+	//DateExpiration string
+
+	return tr.RunNextStep(options)
+
+	//nextStep := tr.Next() // next step to do...
+	//
+	//if nextStep == nil {
+	//	// TODO: save task data! transaction.Complete() or something similar : save + delete completed transaction
+	//
+	//	return tr.Complete(options)
+	//
+	//	//return NewSendMessage(options.Upd.Message.Chat.Id,
+	//	//	`All data is filled: `+string(encodeToJson(tr.GetData())), 0), true
+	//}
+	//
+	//options.Upd.Message.Text = `` // hack to start processing new step
+	//
+	//return nextStep.Run(tr, options)
+
+}
+
+func (t ConfirmStep) Revert(tr Transactional, options RunOptionsStruct) {
+	t.Shown = false
 }
 
 // ===========
@@ -246,13 +475,13 @@ func NewAddTaskTransaction() *AddTaskTransactionStruct {
 }
 
 func NewStartBotCommand() (model StartBotCommandStruct) {
-	model.Init()
+	//model.Init()
 
 	return model
 }
 func NewAddTaskBotCommand() (model AddTaskBotCommandStruct) {
 	model.transactions = make(map[uint32]map[uint32]Transactional) // TODO: fix it somehow, see https://stackoverflow.com/questions/40823315/go-x-does-not-implement-y-method-has-a-pointer-receiver
-	model.Init()
+	//model.Init()
 
 	return model
 }

@@ -2,6 +2,10 @@ package main
 
 import "database/sql"
 
+const statusPending = `pending`
+const statusDone = `done`
+const statusCanceled = `canceled`
+
 // list of all available entities for application
 
 type DbEntityInterface interface {
