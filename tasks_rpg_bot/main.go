@@ -34,7 +34,7 @@ func main() {
 	appConfig = NewAppConfig()
 
 	logger = initLogger()
-	//dbManager = NewDbManager(appConfig.GetDbDsn())
+	dbManager = NewDbManager(appConfig.GetDbDsn())
 	//
 	//database := dbManager.db
 

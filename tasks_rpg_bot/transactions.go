@@ -190,6 +190,61 @@ func (t *TransactionStruct) GetFlashValue(name string, defaultValue interface{})
 
 func (t *TransactionStruct) Complete(options RunOptionsStruct) (sendMessageStruct, bool) {
 
+	for _, value := range t.GetData() {
+		switch value.(type) {
+		case DbEntityInterface:
+			entity := value.(DbEntityInterface)
+
+			logger.Info(` >>>>>> Entity data to save "%T" to DB: %s`, entity, encodeToJson(entity))
+
+			if !entity.Save() {
+				logger.Error(`Failed to save data of "%T" to DB: %s`, entity, encodeToJson(entity))
+			}
+		default:
+			// do nothing
+		}
+	}
+
+	// TODO: check results from db
+
+	database := dbManager.db
+
+	////rows, err := database.Query("SELECT id FROM task")
+	rows, err := database.Query("SELECT title FROM task")
+	////var id int
+	////var firstname string
+	////var lastname string
+	//
+	logger.Info(`SQL ERROR: %s`, err)
+	//
+	////var values []interface{}
+	////values = make([]interface{}, 8)
+	//
+	////var values []interface{}
+	////values := make([]interface{}, 8)
+	////values := make([]string, 8)
+	////values := make([]string, 8)
+	//
+	//var title string
+	//
+	var taskEntity TaskDbEntity
+
+	for rows.Next() {
+		//	//rows.Scan(&id)
+		//	//rows.Scan(&title)
+		err = taskEntity.Load(rows)
+		//	//err = rows.Scan(&values[0])
+		logger.Info(`SQL ERROR DATA LOAD: %s`, err)
+		//	//fmt.Println(id)
+		logger.Info(`SQL ROW: %s`, encodeToJson(taskEntity))
+		//	//fmt.Println(values)
+		//	//rows.Scan(&title)
+		//
+		//	fmt.Println(title)
+		//	//rows.Scan(&id, &firstname, &lastname)
+		//	//fmt.Println(strconv.Itoa(id) + ": " + firstname + " " + lastname)
+	}
+
 	return NewSendMessage(options.Upd.Message.Chat.Id, "TBD: transaction is completed `"+string(encodeToJson(t.GetData()))+"`", 0), true
 	//if value, ok := t.data[name]; ok {
 	//	return value
