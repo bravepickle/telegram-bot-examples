@@ -105,6 +105,7 @@ func main() {
 
 	logger.Info(`Successfully connected to %s`, api.BotInfo.Result.Username)
 
+	go api.processScheduledTasks()
 	api.processRequests()
 }
 

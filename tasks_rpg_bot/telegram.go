@@ -144,6 +144,31 @@ func (r *TelegramBotsApiStruct) checkConnection() bool {
 	return true
 }
 
+func (r *TelegramBotsApiStruct) processScheduledTasks() {
+	logger.Debug(`Starting tasks scheduler...`)
+
+	for {
+		//tasks := dbManager.findFutureTasks()
+		//if logger.DebugLevel() {
+		//	logger.Debug(`Scheduled tasks: %s`, encodeToJson(tasks))
+		//}
+
+		//r.processUpdates()
+		r.processTaskNotifications()
+
+		//logger.Debug(`Sleep...`)
+
+		time.Sleep(time.Duration(r.Sleep) * time.Second) // TODO: change to another value - once a day should be run or similar
+	}
+}
+
+func (r *TelegramBotsApiStruct) processTaskNotifications() {
+	tasks := dbManager.findFutureTasks()
+
+	if logger.DebugLevel() {
+		logger.Debug(`Scheduled tasks: %s`, encodeToJson(tasks))
+	}
+}
 func (r *TelegramBotsApiStruct) processRequests() {
 	logger.Debug(`Starting processing requests...`)
 

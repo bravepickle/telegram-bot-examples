@@ -59,9 +59,33 @@ type TaskDbEntity struct {
 }
 
 func (e *TaskDbEntity) Load(sqlRows *sql.Rows) error {
+	var dateExp, dateCreated, dateUpdated string
 	// TODO: list fields to change params list
-	return sqlRows.Scan(&e.Id, &e.UserId, &e.Title, &e.Description, &e.Status, &e.Exp, &e.DateExpiration, &e.DateCreated, &e.DateUpdated)
+	err := sqlRows.Scan(&e.Id, &e.UserId, &e.Title, &e.Description, &e.Status, &e.Exp, &dateExp, &dateCreated, &dateUpdated)
+
+	if err != nil {
+		return err
+	}
+
+	// need to append local timezone value to properly parse dates from db
+	tz := NewDbTime(time.Now()).Format(`-07:00`)
+
+	dtExp, _ := time.Parse(`2006-01-02 15:04:05 -07:00`, dateExp+" "+tz)
+	e.DateExpiration = NewDbTime(dtExp)
+
+	dtUpd, _ := time.Parse(`2006-01-02 15:04:05 -07:00`, dateUpdated+" "+tz)
+	e.DateUpdated = NewDbTime(dtUpd)
+
+	dtCr, _ := time.Parse(`2006-01-02 15:04:05 -07:00`, dateCreated+" "+tz)
+	e.DateCreated = NewDbTime(dtCr)
+
+	//logger.Error(`1. Retrieved date rows: expiration=%s, created=%s, updated=%s`, dateExp, dateCreated, dateUpdated)
+	//logger.Error(`2. Retrieved date rows: expiration=%s, created=%s, updated=%s`, dtExp, dtCr, dtUpd)
+	//logger.Fatal(`3. Retrieved date rows: expiration=%s, created=%s, updated=%s`, e.DateExpiration, e.DateCreated, e.DateUpdated)
+
 	//return sqlRows.Scan(&e.Id)
+
+	return nil
 }
 
 func (e *TaskDbEntity) Save() bool {
