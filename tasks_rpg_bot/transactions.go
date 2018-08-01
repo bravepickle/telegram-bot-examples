@@ -77,7 +77,7 @@ func (t *TransactionStruct) Run(options RunOptionsStruct) (sendMessageStruct, bo
 	if currentStep != nil {
 		return currentStep.Run(t, options)
 	} else {
-		logger.Error(`Current step not defined: %s`, t.GetName())
+		logger.Error(`Current step not defined: %d`, t.currentStepIndex)
 
 		return nil, false
 	}
@@ -157,7 +157,7 @@ func (t *TransactionStruct) GetDataValue(name string, defaultValue interface{}) 
 
 func (t *TransactionStruct) Complete(options RunOptionsStruct) (sendMessageStruct, bool) {
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, `TBD: transaction is completed `+string(encodeToJson(t.GetData())), 0), true
+	return NewSendMessage(options.Upd.Message.Chat.Id, "TBD: transaction is completed `"+string(encodeToJson(t.GetData()))+"`", 0), true
 	//if value, ok := t.data[name]; ok {
 	//	return value
 	//}
@@ -179,11 +179,11 @@ func (t *AddTaskTransactionStruct) Init() {
 	logger.Debug(`>>>>>>>>>>> Init task "%s"`, t.GetName())
 	t.Reset()
 
-	t.steps = append(t.steps, TitleStep{})
-	t.steps = append(t.steps, ExperienceStep{})
-	t.steps = append(t.steps, SummaryStep{}) // TODO: add mapping for fields or use toString in steps to convert
-	t.steps = append(t.steps, ConfirmStep{})
-	t.steps = append(t.steps, TaskDefaultStep{})
+	t.steps = append(t.steps, &TitleStep{})
+	t.steps = append(t.steps, &ExperienceStep{})
+	t.steps = append(t.steps, &SummaryStep{}) // TODO: add mapping for fields or use toString in steps to convert
+	t.steps = append(t.steps, &ConfirmStep{})
+	t.steps = append(t.steps, &TaskDefaultStep{})
 }
 
 //func (t *AddTaskTransactionStruct) Run() bool {
@@ -192,17 +192,17 @@ func (t *AddTaskTransactionStruct) Init() {
 //	return true
 //}
 // =========== BasicStep
-type BasicStep struct {
-}
-
-//func () Set(name string, value interface{}) {
+//type BasicStep struct {
+//}
+//
+//func (s *BasicStep) Set(name string, value interface{}) {
 //	// do nothing. override in dependencies
 //}
 
 // =========== ExperienceStep
 //"CREATE TABLE IF NOT EXISTS task (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT, description TEXT, status TEXT, exp INTEGER, date_expiration TEXT DEFAULT '', date_created TEXT DEFAULT CURRENT_TIMESTAMP, date_updated TEXT DEFAULT CURRENT_TIMESTAMP)",
 type ExperienceStep struct {
-	BasicStep
+	//BasicStep
 }
 
 func (t ExperienceStep) GetName() string {
@@ -233,7 +233,7 @@ func (t ExperienceStep) Revert(tr Transactional, options RunOptionsStruct) {
 
 // =========== TitleStep
 type TitleStep struct {
-	BasicStep
+	//BasicStep
 }
 
 func (t TitleStep) GetName() string {
@@ -291,7 +291,7 @@ func (t TitleStep) Revert(tr Transactional, options RunOptionsStruct) {
 
 // =========== TaskDefaultStep
 type TaskDefaultStep struct {
-	BasicStep
+	//BasicStep
 }
 
 func (t TaskDefaultStep) GetName() string {
@@ -337,9 +337,9 @@ func (t TaskDefaultStep) Revert(tr Transactional, options RunOptionsStruct) {
 
 // =========== SummaryStep
 type SummaryStep struct {
-	BasicStep
+	//BasicStep
 
-	//Shown bool
+	Shown bool
 }
 
 func (t SummaryStep) GetName() string {
@@ -350,16 +350,18 @@ func (t SummaryStep) GetName() string {
 //	t.Shown = value
 //}
 
-func (t SummaryStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
-	shown := tr.GetDataValue(`is_summary_shown`, false).(bool)
-	logger.Debug(`>>>>>>>>>>>>>>>>>>>>>>>>> Task "%s" shown = %t`, t.GetName(), shown)
+func (t *SummaryStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
+	//shown := tr.GetDataValue(`is_summary_shown`, false).(bool)
+	//shown := t.Shown
+	logger.Debug(`>>>>>>>>>>>>>>>>>>>>>>>>> Task "%s" shown = %t`, t.GetName(), t.Shown)
 
-	if !shown {
-		tr.SetDataValue(`is_summary_shown`, true)
+	if !t.Shown {
+		t.Shown = true
+		//tr.SetDataValue(`is_summary_shown`, true)
 		text := "*Summary:* \n"
 		data := tr.GetData()
 
-		logger.Debug(`+++ >>>>>>>>>>>>>>>>>>>>>>>>> Task "%s" shown = %t`, t.GetName(), shown)
+		logger.Debug(`+++ >>>>>>>>>>>>>>>>>>>>>>>>> Task "%s" shown = %t`, t.GetName(), t.Shown)
 
 		// TODO: use params mapping and values type check
 
@@ -367,7 +369,9 @@ func (t SummaryStep) Run(tr Transactional, options RunOptionsStruct) (sendMessag
 			text += fmt.Sprintf("  %s: %v\n", name, value)
 		}
 
-		return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
+		tr.SetDataValue(`message_text_prepend`, text) // a hack to avoid sending message right away. Will receive in confirm msg
+
+		//return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
 	}
 
 	//Id             int
@@ -397,8 +401,10 @@ func (t SummaryStep) Run(tr Transactional, options RunOptionsStruct) (sendMessag
 
 }
 
-func (t SummaryStep) Revert(tr Transactional, options RunOptionsStruct) {
-	tr.SetDataValue(`is_summary_shown`, false)
+func (t *SummaryStep) Revert(tr Transactional, options RunOptionsStruct) {
+	t.Shown = false
+	tr.SetDataValue(`message_text_prepend`, ``)
+	//tr.SetDataValue(`is_summary_shown`, false)
 }
 
 // =========== ConfirmStep
@@ -416,16 +422,26 @@ func (t *ConfirmStep) SetShown(value bool) {
 	t.Shown = value
 }
 
-func (t ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
+func (t *ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (sendMessageStruct, bool) {
 	var yes, no = `y`, `n`
 	if !t.Shown {
-
+		t.Shown = true
 		//tr.Current().Se = true
 		//t.SetShown(true)
 
 		// TODO: on typing NO go to step 1
 
-		text := fmt.Sprintf("Proceed? %s/%s", yes, no)
+		prependText := tr.GetDataValue(`message_text_prepend`, ``).(string)
+
+		var text string
+
+		if prependText != `` {
+			tr.SetDataValue(`message_text_prepend`, ``) // TODO: add DelDataValue instead
+
+			text = fmt.Sprintf("%s\n*Proceed?* %s/%s", prependText, yes, no)
+		} else {
+			text = fmt.Sprintf("Proceed? %s/%s", yes, no)
+		}
 
 		return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
 	}
