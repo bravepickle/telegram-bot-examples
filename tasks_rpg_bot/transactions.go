@@ -165,12 +165,11 @@ func (t *TransactionStruct) Complete(options RunOptionsStruct) (sendMessageStruc
 		case DbEntityInterface:
 			entity := value.(DbEntityInterface)
 			if !entity.Save() {
+				t.Reset()
 				logger.Error(`Failed to save data of "%T" to DB: %s`, entity, encodeToJson(entity))
+
+				return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to save data. Please, try again lager`, 0), true
 			}
-
-			t.Reset()
-
-			return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to save data. Please, try again lager`, 0), true
 
 		default:
 			// do nothing

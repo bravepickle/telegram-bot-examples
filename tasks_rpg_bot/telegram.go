@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -168,6 +169,26 @@ func (r *TelegramBotsApiStruct) processTaskNotifications() {
 	if logger.DebugLevel() {
 		logger.Debug(`Scheduled tasks: %s`, encodeToJson(tasks))
 	}
+
+	if len(tasks) > 0 {
+		// TODO: send message and somehow define to which user/chat to send it
+
+		tasksByUser := make(map[int][]TaskDbEntity)
+		for _, task := range tasks {
+			tasksByUser[task.UserId] = append(tasksByUser[task.UserId], task)
+		}
+
+		for userId, userTasks := range tasksByUser {
+			msg := "*Tasks TODO:*\n"
+			// TODO: order by date or priority, exp
+			for _, task := range userTasks {
+				msg += fmt.Sprintf("  _%s_: expires at \"%s\", gain \"%d\" exp\n", task.Title, task.DateExpiration, task.Exp)
+			}
+
+			// TODO: can we use userId as chat id?
+			r.sendMessage(NewSendMessage(uint32(userId), msg, 0))
+		}
+	}
 }
 func (r *TelegramBotsApiStruct) processRequests() {
 	logger.Debug(`Starting processing requests...`)
@@ -256,7 +277,7 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 			if found {
 				hasProcessed = true
 
-				r.sendMessage(sendMessage, options)
+				r.sendMessage(sendMessage)
 			}
 		}
 	} else {
@@ -271,7 +292,7 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 
 				hasProcessed = true
 
-				r.sendMessage(sendMessage, options)
+				r.sendMessage(sendMessage)
 
 				//logger.Fatal(`Found running options for command %s`, botCommand.GetName())
 				//
@@ -292,7 +313,7 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 	}
 }
 
-func (r *TelegramBotsApiStruct) sendMessage(sendMessage sendMessageStruct, options RunOptionsStruct) {
+func (r *TelegramBotsApiStruct) sendMessage(sendMessage sendMessageStruct) {
 	if logger.DebugLevel() {
 		logger.Debug(`Message to send: %s`, encodeToJson(sendMessage))
 	}
@@ -300,12 +321,6 @@ func (r *TelegramBotsApiStruct) sendMessage(sendMessage sendMessageStruct, optio
 	if _, ok := r.RequestManager.SendPostJsonRequest(r.routingSend.Uri(), sendMessage); !ok {
 		logger.Error("Failed to send message: %s", encodeToJson(sendMessage))
 	}
-	//sentOnceSuccessfully = true
-	// TODO: add mutex, locks or something similar to avoid competing updates of this field
-	//if options.Upd.UpdateId >= r.routingUpdate.Offset {
-	//	logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, options.Upd.UpdateId+1)
-	//	r.routingUpdate.Offset = options.Upd.UpdateId + 1
-	//}
 }
 
 func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct) (sendMessage sendMessageStruct, found bool) {
