@@ -46,6 +46,33 @@ func (m *DbManager) initTables() {
 	}
 }
 
+func (m *DbManager) findAllTasks() (entities []TaskDbEntity) {
+	rows, err := m.db.Query("SELECT * FROM task")
+
+	if err != nil {
+		logger.Error(`SQL error: %s`, err)
+	}
+
+	for rows.Next() {
+		var taskEntity TaskDbEntity
+		err = taskEntity.Load(rows)
+
+		if err != nil {
+			logger.Info(`SQL error data load: %s`, err)
+
+			continue
+		}
+
+		//if logger.DebugLevel() {
+		//	logger.Debug(`SQL ROW: %s`, encodeToJson(taskEntity))
+		//}
+
+		entities = append(entities, taskEntity)
+	}
+
+	return entities
+}
+
 func NewDbManager(dsn string) *DbManager {
 	var manager DbManager
 
