@@ -63,10 +63,6 @@ func (m *DbManager) findFutureTasks() (entities []TaskDbEntity) {
 			continue
 		}
 
-		//if logger.DebugLevel() {
-		//	logger.Debug(`SQL ROW: %s`, encodeToJson(taskEntity))
-		//}
-
 		entities = append(entities, taskEntity)
 	}
 

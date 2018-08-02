@@ -57,7 +57,6 @@ func (c StartBotCommandStruct) GetName() string {
 
 type DefaultBotCommandStruct struct {
 	BotCommand
-	//BotCommander
 }
 
 func (c DefaultBotCommandStruct) GetName() string {
@@ -65,12 +64,6 @@ func (c DefaultBotCommandStruct) GetName() string {
 }
 
 func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
-	//if len(upd.Message.Text) > ent.Offset+ent.Length {
-	//	text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-	//} else {
-	//text = `Sorry, cannot process your command`
-	//}
-
 	logger.Debug(`Running %s command`, c.GetName())
 
 	return NewSendMessage(options.Upd.Message.Chat.Id, `Sorry, could not recognize this action`+emojiColdSweat, options.Upd.Message.MessageId), nil

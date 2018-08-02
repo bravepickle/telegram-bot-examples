@@ -226,16 +226,12 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 
 	// TODO: edited_message handle, inline_query
 
-	//sentOnceSuccessfully := false
-
 	for _, upd := range updates.Result {
 		// TODO: add limit of maximum parallel requests to API in parallel and wait until available
 		go r.processSingleUpdate(RunOptionsStruct{Upd: upd})
 	}
 
 	logger.Debug(`Finished polling for updates.`)
-
-	//return sentOnceSuccessfully
 
 	return true
 }
@@ -245,7 +241,7 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 	logger.Info(`Handling update ID=%d, Message=%d`, options.Upd.UpdateId, options.Upd.Message.MessageId)
 	logger.Debug(`> %s`, options.Upd.Message.Text)
 
-	var hasProcessed = true
+	var hasProcessed = false
 
 	if len(options.Upd.Message.Entities) > 0 {
 		logger.Debug(`Processing message entities...`)
@@ -278,9 +274,24 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 	// todo: update index even if no text messages can be processed
 	// TODO: always single send-message for message+message entities?
 
-	if !hasProcessed {
+	if !hasProcessed && options.Upd.Message.Text != `` {
+		msg, err := r.commandDefault.Run(options)
+		if err != nil {
+			logger.Error(`Failed to run command "%s": %s`, r.commandDefault.GetName(), err)
+		} else {
+			r.sendMessage(msg)
+		}
+
+		r.updateOffset(options) // do not stop on failed command
+	} else if !hasProcessed {
 		logger.Debug(`No new messages...`)
-	} else if options.Upd.UpdateId >= r.routingUpdate.Offset {
+	} else {
+		r.updateOffset(options)
+	}
+}
+
+func (r *TelegramBotsApiStruct) updateOffset(options RunOptionsStruct) {
+	if options.Upd.UpdateId >= r.routingUpdate.Offset {
 		logger.Debug("Was offset %d, will be: %d", r.routingUpdate.Offset, options.Upd.UpdateId+1)
 		r.routingUpdate.Offset = options.Upd.UpdateId + 1
 	}
