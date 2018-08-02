@@ -83,5 +83,4 @@ type UpdateCollectionTelegramModel struct {
 	Result []UpdateTelegramModel
 }
 
-//type sendMessageStruct map[string]string
-type sendMessageStruct map[string]interface{}
+type SendMessageStruct map[string]interface{}

@@ -10,7 +10,7 @@ const emojiGlowingStar = "\U0001F31F"
 const emojiColdSweat = "\U0001F613"
 
 type BotCommander interface {
-	Run(options RunOptionsStruct) (sendMessageStruct, error)
+	Run(options RunOptionsStruct) (SendMessageStruct, error)
 	GetName() string
 	IsRunning(options RunOptionsStruct) bool // return true if command is transactional and in process of running, e.g. waiting for user input
 	//Init()
@@ -36,7 +36,7 @@ type StartBotCommandStruct struct {
 	BotCommand
 }
 
-func (c StartBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
+func (c StartBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
 	logger.Debug(`Running %s command`, c.GetName())
 
 	if logger.DebugLevel() {
@@ -64,7 +64,7 @@ func (c DefaultBotCommandStruct) GetName() string {
 	return `/default`
 }
 
-func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
+func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
 	//if len(upd.Message.Text) > ent.Offset+ent.Length {
 	//	text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
 	//} else {
@@ -124,7 +124,7 @@ func (c AddTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Trans
 	}
 }
 
-func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (sendMessageStruct, error) {
+func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
 	logger.Debug(`Running %s command`, c.GetName())
 
 	if logger.DebugLevel() {

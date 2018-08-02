@@ -259,8 +259,6 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 }
 
 func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
-	//var sendMessage sendMessageStruct
-
 	// TODO: use go channels for each update and read channel for results of sentOnceSuccessfully
 	// for parallel computation
 	logger.Info(`Handling update ID=%d, Message=%d`, options.Upd.UpdateId, options.Upd.Message.MessageId)
@@ -314,7 +312,7 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 	}
 }
 
-func (r *TelegramBotsApiStruct) sendMessage(sendMessage sendMessageStruct) {
+func (r *TelegramBotsApiStruct) sendMessage(sendMessage SendMessageStruct) {
 	if logger.DebugLevel() {
 		logger.Debug(`Message to send: %s`, encodeToJson(sendMessage))
 	}
@@ -324,7 +322,7 @@ func (r *TelegramBotsApiStruct) sendMessage(sendMessage sendMessageStruct) {
 	}
 }
 
-func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct) (sendMessage sendMessageStruct, found bool) {
+func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct) (sendMessage SendMessageStruct, found bool) {
 	var err error
 	found = false
 
@@ -361,8 +359,8 @@ func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct
 	return sendMessage, found
 }
 
-func NewSendMessage(chatId uint32, text string, replyToMsgId uint32) sendMessageStruct {
-	msg := make(sendMessageStruct)
+func NewSendMessage(chatId uint32, text string, replyToMsgId uint32) SendMessageStruct {
+	msg := make(SendMessageStruct)
 
 	msg[`parse_mode`] = `Markdown`
 	msg[`disable_notification`] = `true`
@@ -378,29 +376,29 @@ func NewSendMessage(chatId uint32, text string, replyToMsgId uint32) sendMessage
 	return msg
 }
 
-type SendMessageOptionsStruct struct {
-	ChatId       int
-	Text         string
-	ReplyToMsgId int
-}
-
-// NewSendMessageWithOptions generates send message according to input options
-func NewSendMessageWithOptions(options SendMessageOptionsStruct) sendMessageStruct {
-	msg := make(sendMessageStruct)
-
-	msg[`parse_mode`] = `Markdown`
-	msg[`disable_notification`] = `true`
-	msg[`disable_web_page_preview`] = `true`
-
-	msg[`chat_id`] = options.ChatId
-	msg[`text`] = options.Text
-
-	if options.ReplyToMsgId != 0 {
-		msg[`reply_to_message_id`] = options.ReplyToMsgId
-	}
-
-	return msg
-}
+//type SendMessageOptionsStruct struct {
+//	ChatId       int
+//	Text         string
+//	ReplyToMsgId int
+//}
+//
+//// NewSendMessageWithOptions generates send message according to input options
+//func NewSendMessageWithOptions(options SendMessageOptionsStruct) SendMessageStruct {
+//	msg := make(SendMessageStruct)
+//
+//	msg[`parse_mode`] = `Markdown`
+//	msg[`disable_notification`] = `true`
+//	msg[`disable_web_page_preview`] = `true`
+//
+//	msg[`chat_id`] = options.ChatId
+//	msg[`text`] = options.Text
+//
+//	if options.ReplyToMsgId != 0 {
+//		msg[`reply_to_message_id`] = options.ReplyToMsgId
+//	}
+//
+//	return msg
+//}
 
 /////////////////
 
