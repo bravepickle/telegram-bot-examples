@@ -11,8 +11,7 @@ var inputFlags inputFlagsStruct
 var api *TelegramBotsApiStruct
 var appConfig *AppConfigStruct
 var dbManager *DbManager
-
-const pollSleepInterval = 5
+var usrMsg *UserMessage
 
 func init() {
 	flag.BoolVar(&inputFlags.Debug, "v", false, "Verbose output.")
@@ -35,6 +34,7 @@ func main() {
 
 	logger = initLogger()
 	dbManager = NewDbManager(appConfig.GetDbDsn())
+	usrMsg = NewUserMessage()
 
 	//logger.Fatal(year)
 	//

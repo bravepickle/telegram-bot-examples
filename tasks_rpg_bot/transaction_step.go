@@ -38,7 +38,7 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageS
 	}
 
 	return NewSendMessage(options.Upd.Message.Chat.Id,
-		`Please, enter title for the task`, 0), true
+		usrMsg.T(`request.task.title`), 0), true
 }
 
 func (t TitleStep) Revert(tr Transactional, options RunOptionsStruct) {
@@ -71,7 +71,7 @@ func (t ExperienceStep) Run(tr Transactional, options RunOptionsStruct) (SendMes
 	}
 
 	return NewSendMessage(options.Upd.Message.Chat.Id,
-		`Please, enter amount of experience gained for the completion task`, 0), true
+		usrMsg.T(`request.task.exp`), 0), true
 }
 
 func (t ExperienceStep) Revert(tr Transactional, options RunOptionsStruct) {
@@ -88,6 +88,8 @@ func (t DateExpirationStep) GetName() string {
 }
 
 func (t DateExpirationStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
+	answerNo := usrMsg.T(`answer.no`)
+
 	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
 		if answerNo != options.Upd.Message.Text {
 			dt, err := time.Parse("02/01", options.Upd.Message.Text)
@@ -98,7 +100,7 @@ func (t DateExpirationStep) Run(tr Transactional, options RunOptionsStruct) (Sen
 				if err != nil {
 					logger.Error(`Failed to parse date "%s": %s`, options.Upd.Message.Text, err)
 
-					return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to read date. Please, try again`, 0), true
+					return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.date.fail`), 0), true
 				}
 			} else {
 				dt = dt.AddDate(time.Now().Year(), 0, 0) // append current year
@@ -116,7 +118,7 @@ func (t DateExpirationStep) Run(tr Transactional, options RunOptionsStruct) (Sen
 		return tr.RunNextStep(options)
 	}
 
-	text := fmt.Sprintf(`Please, enter expiration date for the task (formats: "%s", "%s") or write "%s"`, dateFormat, dateFormatShort, answerNo)
+	text := usrMsg.T(`request.task.expiration`, dateFormat, dateFormatShort, answerNo)
 
 	return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
 }
@@ -164,7 +166,7 @@ func (t SummaryStep) GetName() string {
 func (t *SummaryStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
 	if !t.Shown {
 		t.Shown = true
-		text := "*Summary:* \n"
+		text := "*" + usrMsg.T(`response.summary.header`) + ":* \n"
 		data := tr.GetData()
 
 		for name, value := range data {
@@ -204,7 +206,7 @@ func (t *ConfirmStep) SetShown(value bool) {
 }
 
 func (t *ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
-	var yes, no = `y`, `n`
+	var yes, no = usrMsg.T(`answer.yes`), usrMsg.T(`answer.no`)
 	if !t.Shown {
 		t.Shown = true
 		prependText := tr.GetFlashValue(`message_text_prepend`, ``).(string)
@@ -212,9 +214,9 @@ func (t *ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (SendMessa
 
 		var text string
 		if prependText != `` {
-			text = fmt.Sprintf("%s\n*Proceed?* %s/%s", prependText, yes, no)
+			text = prependText + "\n" + usrMsg.T(`request.proceed`, yes, no)
 		} else {
-			text = fmt.Sprintf("Proceed? %s/%s", yes, no)
+			text = usrMsg.T(`request.proceed`, yes, no)
 		}
 
 		return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true

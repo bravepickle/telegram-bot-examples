@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -163,10 +162,10 @@ func (r *TelegramBotsApiStruct) processTaskNotifications() {
 		}
 
 		for userId, userTasks := range tasksByUser {
-			msg := "*Tasks TODO:*\n"
+			msg := "*" + usrMsg.T(`remind.task.header`) + "*\n"
 			// TODO: order by date or priority, XP
-			for _, task := range userTasks {
-				msg += fmt.Sprintf("  _%s_: expires at \"%s\", gain \"%d\" XP\n", task.Title, task.DateExpiration, task.Exp)
+			for k, task := range userTasks {
+				msg += usrMsg.T(`remind.task.line`, k+1, task.Title, task.DateExpiration, task.Exp) + "\n"
 			}
 
 			r.sendMessage(NewSendMessage(uint32(userId), msg, 0))

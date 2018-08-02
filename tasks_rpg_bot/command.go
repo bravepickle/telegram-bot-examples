@@ -13,7 +13,6 @@ type BotCommander interface {
 	Run(options RunOptionsStruct) (SendMessageStruct, error)
 	GetName() string
 	IsRunning(options RunOptionsStruct) bool // return true if command is transactional and in process of running, e.g. waiting for user input
-	//Init()
 }
 
 type RunOptionsStruct struct {
@@ -22,15 +21,11 @@ type RunOptionsStruct struct {
 }
 
 type BotCommand struct {
-	//Name string
 }
 
 func (c BotCommand) IsRunning(options RunOptionsStruct) bool {
 	return false
 }
-
-//func (c BotCommand) Init() {
-//}
 
 type StartBotCommandStruct struct {
 	BotCommand
@@ -47,8 +42,7 @@ func (c StartBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct,
 		}
 	}
 
-	return NewSendMessage(options.Upd.Message.Chat.Id,
-		`Welcome to RPG Tasks Bot chat. Gain lots of XP and earn achievements and reach the goals! `+emojiGlowingStar, options.Upd.Message.MessageId), nil
+	return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.welcome`), options.Upd.Message.MessageId), nil
 }
 
 func (c StartBotCommandStruct) GetName() string {
@@ -66,7 +60,7 @@ func (c DefaultBotCommandStruct) GetName() string {
 func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
 	logger.Debug(`Running %s command`, c.GetName())
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, `Sorry, could not recognize this action`+emojiColdSweat, options.Upd.Message.MessageId), nil
+	return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.unrecognized`), options.Upd.Message.MessageId), nil
 }
 
 // ================== AddTaskBotCommandStruct

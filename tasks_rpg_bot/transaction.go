@@ -2,7 +2,6 @@ package main
 
 const dateFormat = `YYYY-mm-dd`
 const dateFormatShort = `dd/mm`
-const answerNo = "no"
 
 type Transactional interface {
 	GetName() string
@@ -155,7 +154,7 @@ func (t *TransactionStruct) Complete(options RunOptionsStruct) (SendMessageStruc
 				t.Reset()
 				logger.Error(`Failed to save data of "%T" to DB: %s`, entity, encodeToJson(entity))
 
-				return NewSendMessage(options.Upd.Message.Chat.Id, `Failed to save data. Please, try again lager`, 0), true
+				return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.save.fail`), 0), true
 			}
 
 		default:
@@ -163,7 +162,7 @@ func (t *TransactionStruct) Complete(options RunOptionsStruct) (SendMessageStruc
 		}
 	}
 
-	text := "TBD: transaction is completed `" + string(encodeToJson(t.GetData())) + "`"
+	text := usrMsg.T(`response.save.success`, string(encodeToJson(t.GetData())))
 
 	t.Reset()
 
