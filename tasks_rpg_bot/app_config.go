@@ -8,6 +8,7 @@ import (
 )
 
 const defaultEnvFile = `.env`
+const cfgAppLocale = `APP_LOCALE`
 const cfgDbDsn = `DB_DSN`
 const cfgApiAuthKey = `API_AUTH_KEY`
 const cfgApiTimeout = `API_TIMEOUT`
@@ -28,6 +29,11 @@ func (c *AppConfigStruct) Get(param string, defaultVal string) string {
 	}
 
 	return defaultVal
+}
+
+// GetDbDsn get DB DSN
+func (c *AppConfigStruct) GetAppLocale() string {
+	return c.Get(cfgAppLocale, defaultLocale)
 }
 
 // GetDbDsn get DB DSN

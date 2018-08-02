@@ -210,9 +210,8 @@ func (t *ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (SendMessa
 	if !t.Shown {
 		t.Shown = true
 		prependText := tr.GetFlashValue(`message_text_prepend`, ``).(string)
-		// TODO: on typing NO go to step 1
-
 		var text string
+
 		if prependText != `` {
 			text = prependText + "\n" + usrMsg.T(`request.proceed`, yes, no)
 		} else {

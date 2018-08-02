@@ -32,9 +32,11 @@ func main() {
 
 	appConfig = NewAppConfig()
 
+	fmt.Println("Locale:", appConfig.GetAppLocale())
+
 	logger = initLogger()
 	dbManager = NewDbManager(appConfig.GetDbDsn())
-	usrMsg = NewUserMessage()
+	usrMsg = NewUserMessage(appConfig.GetAppLocale())
 
 	//logger.Fatal(year)
 	//
