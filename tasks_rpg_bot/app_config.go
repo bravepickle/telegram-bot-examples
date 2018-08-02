@@ -11,6 +11,12 @@ const defaultEnvFile = `.env`
 const cfgDbDsn = `DB_DSN`
 const cfgApiAuthKey = `API_AUTH_KEY`
 const cfgApiTimeout = `API_TIMEOUT`
+const cfgApiUpdatesInterval = `API_UPDATES_INTERVAL`
+const cfgApiRemindInterval = `API_REMIND_INTERVAL`
+
+const defaultApiRemindIntervalHr = 24   // in hours
+const defaultApiUpdatesIntervalSec = 10 // in seconds
+const defaultResponseTimeout = 5        // in seconds
 
 type AppConfigStruct struct {
 	params map[string]string
@@ -24,37 +30,54 @@ func (c *AppConfigStruct) Get(param string, defaultVal string) string {
 	return defaultVal
 }
 
+// GetDbDsn get DB DSN
 func (c *AppConfigStruct) GetDbDsn() string {
 	return c.Get(cfgDbDsn, ``)
 }
 
+// GetApiTimeout get Telegram Bot API secret
 func (c *AppConfigStruct) GetApiAuthKey() string {
 	return c.Get(cfgApiAuthKey, ``)
 }
+
+// GetApiTimeout get API response timeout
 func (c *AppConfigStruct) GetApiTimeout() int {
-	strTimeout := c.Get(cfgApiTimeout, ``)
-	if strTimeout == `` {
-		return responseTimeoutDefault
-	}
-
-	timeout, err := strconv.Atoi(strTimeout)
-
-	if err != nil {
-		logger.Fatal(`Failed to parse value for "%s": %s`, cfgApiTimeout, err)
-	}
-
-	return timeout
+	return c.getIntValue(cfgApiTimeout, defaultResponseTimeout)
 }
 
+// GetApiRemindInterval returns number of seconds interval between reminding on unfinished tasks
+func (c *AppConfigStruct) GetApiUpdatesInterval() int {
+	return c.getIntValue(cfgApiUpdatesInterval, defaultApiUpdatesIntervalSec)
+}
+
+// GetApiRemindInterval returns number of hours interval between reminding on unfinished tasks
+func (c *AppConfigStruct) GetApiRemindInterval() int {
+	return c.getIntValue(cfgApiRemindInterval, defaultApiRemindIntervalHr)
+}
+
+// load loads env files to struct
 func (c *AppConfigStruct) load(filenames ...string) {
 	data, err := godotenv.Read(filenames...)
 	if err != nil {
 		log.Fatalf(`Failed to load config(s): %s`, err)
 	}
 
-	//log.Printf(`CONFIG: %v` + "\n", data)
-
 	c.params = data
+}
+
+// getIntValue get value of type integer routine
+func (c *AppConfigStruct) getIntValue(name string, defaultValue int) int {
+	rawValue := c.Get(name, ``)
+	if rawValue == `` {
+		return defaultValue
+	}
+
+	value, err := strconv.Atoi(rawValue)
+	if err != nil {
+		logger.Fatal(`Failed to parse rawValue for "%s": %s`, name, err)
+	}
+
+	return value
 }
 
 func NewAppConfig() *AppConfigStruct {
@@ -70,11 +93,3 @@ func NewAppConfig() *AppConfigStruct {
 
 	return &config
 }
-
-// rootPath checks the current path
-//func rootPath() string {
-//	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//}

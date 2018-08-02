@@ -32,7 +32,6 @@ type DbEntityInterface interface {
 
 type DbEntityStruct struct {
 	Id int
-	//InitSql string // string to init table for given entity
 }
 
 func (e DbEntityStruct) isNewRecord() bool {

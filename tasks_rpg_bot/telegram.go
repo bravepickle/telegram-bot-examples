@@ -17,9 +17,6 @@ import (
 // apiBaseUri base address for Telegram Bots API
 const apiBaseUri = `https://api.telegram.org/bot`
 
-// responseTimeoutDefault default timeout for handling telegram requests
-const responseTimeoutDefault = 5
-
 /////////////////
 
 type TelegramBotsApiRequestModel struct {
@@ -30,18 +27,17 @@ type TelegramBotsApiRequestModel struct {
 
 // Uri builds URI for the request
 func (r *TelegramBotsApiRequestModel) Uri() string {
-	//fmt.Printf("IN URI: %v\n", r)
 	return r.Api.GetBaseUri() + r.Path
-	//return `[UNDEFINED]`
 }
 
 func (r TelegramBotsApiRequestModel) String() string {
 	return r.Path
 }
 
-func (r *TelegramBotsApiRequestModel) init() {
-	// overreide this method in children
-	r.Timeout = responseTimeoutDefault
+func (r *TelegramBotsApiRequestModel) Init(api *TelegramBotsApiStruct) {
+	// override this method in children
+	r.Timeout = appConfig.GetApiTimeout()
+	r.Api = api
 }
 
 /////////////////
@@ -51,10 +47,9 @@ type MeRequestModel struct {
 	TelegramBotsApiRequestModel
 }
 
-func (r *MeRequestModel) init(api *TelegramBotsApiStruct) {
+func (r *MeRequestModel) Init(api *TelegramBotsApiStruct) {
+	r.TelegramBotsApiRequestModel.Init(api)
 	r.Path = `/getMe`
-	r.Api = api
-	r.Timeout = responseTimeoutDefault
 
 	logger.Debug("Initialized Telegram request model: %s", r.Path)
 }
@@ -67,10 +62,9 @@ type UpdateRequestModel struct {
 	Offset uint32
 }
 
-func (r *UpdateRequestModel) init(api *TelegramBotsApiStruct) {
+func (r *UpdateRequestModel) Init(api *TelegramBotsApiStruct) {
+	r.TelegramBotsApiRequestModel.Init(api)
 	r.Path = `/getUpdates`
-	r.Api = api
-	r.Timeout = responseTimeoutDefault
 
 	logger.Debug("Initialized Telegram request model: %s", r.Path)
 }
@@ -86,10 +80,9 @@ type SendMessageRequestModel struct {
 	TelegramBotsApiRequestModel
 }
 
-func (r *SendMessageRequestModel) init(api *TelegramBotsApiStruct) {
+func (r *SendMessageRequestModel) Init(api *TelegramBotsApiStruct) {
+	r.TelegramBotsApiRequestModel.Init(api)
 	r.Path = `/sendMessage`
-	r.Api = api
-	r.Timeout = responseTimeoutDefault
 
 	logger.Debug("Initialized Telegram request model: %s", r.Path)
 }
@@ -149,17 +142,8 @@ func (r *TelegramBotsApiStruct) processScheduledTasks() {
 	logger.Debug(`Starting tasks scheduler...`)
 
 	for {
-		//tasks := dbManager.findFutureTasks()
-		//if logger.DebugLevel() {
-		//	logger.Debug(`Scheduled tasks: %s`, encodeToJson(tasks))
-		//}
-
-		//r.processUpdates()
 		r.processTaskNotifications()
-
-		//logger.Debug(`Sleep...`)
-
-		time.Sleep(time.Duration(r.Sleep) * time.Second) // TODO: change to another value - once a day should be run or similar
+		time.Sleep(time.Duration(appConfig.GetApiRemindInterval()) * time.Hour)
 	}
 }
 
@@ -171,8 +155,7 @@ func (r *TelegramBotsApiStruct) processTaskNotifications() {
 	}
 
 	if len(tasks) > 0 {
-		// TODO: send message and somehow define to which user/chat to send it
-		// TODO: notify on expired and prompt on what to do - prolong or cancel with xp loss
+		// TODO: notify on expired and prompt on what to do - prolong or cancel with xp loss?
 
 		tasksByUser := make(map[int][]TaskDbEntity)
 		for _, task := range tasks {
@@ -181,12 +164,11 @@ func (r *TelegramBotsApiStruct) processTaskNotifications() {
 
 		for userId, userTasks := range tasksByUser {
 			msg := "*Tasks TODO:*\n"
-			// TODO: order by date or priority, exp
+			// TODO: order by date or priority, XP
 			for _, task := range userTasks {
 				msg += fmt.Sprintf("  _%s_: expires at \"%s\", gain \"%d\" XP\n", task.Title, task.DateExpiration, task.Exp)
 			}
 
-			// TODO: can we use userId as chat id?
 			r.sendMessage(NewSendMessage(uint32(userId), msg, 0))
 		}
 	}
@@ -259,12 +241,10 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 }
 
 func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
-	// TODO: use go channels for each update and read channel for results of sentOnceSuccessfully
-	// for parallel computation
+	// TODO: use go channels for each update and read channel for results of sentOnceSuccessfully - for parallel computation
 	logger.Info(`Handling update ID=%d, Message=%d`, options.Upd.UpdateId, options.Upd.Message.MessageId)
 	logger.Debug(`> %s`, options.Upd.Message.Text)
 
-	//var text = upd.Message.Text
 	var hasProcessed = true
 
 	if len(options.Upd.Message.Entities) > 0 {
@@ -290,18 +270,12 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 				}
 
 				hasProcessed = true
-
 				r.sendMessage(sendMessage)
-
-				//logger.Fatal(`Found running options for command %s`, botCommand.GetName())
-				//
-				//break
 			}
 		}
 	}
 
 	// todo: update index even if no text messages can be processed
-
 	// TODO: always single send-message for message+message entities?
 
 	if !hasProcessed {
@@ -412,9 +386,9 @@ func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
 		Sleep:          sleep,
 	}
 
-	api.routingMe.init(&api)
-	api.routingUpdate.init(&api)
-	api.routingSend.init(&api)
+	api.routingMe.Init(&api)
+	api.routingUpdate.Init(&api)
+	api.routingSend.Init(&api)
 
 	api.commands = append(api.commands, NewStartBotCommand(), NewAddTaskBotCommand())
 

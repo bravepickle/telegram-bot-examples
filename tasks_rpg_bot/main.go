@@ -112,11 +112,9 @@ func main() {
 func initSleep() int {
 	sleep := inputFlags.Sleep
 	if sleep <= 0 {
-		sleep = appConfig.GetApiTimeout()
+		sleep = appConfig.GetApiUpdatesInterval()
 	}
-	if sleep <= 0 {
-		sleep = responseTimeoutDefault
-	}
+
 	return sleep
 }
 

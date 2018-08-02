@@ -47,7 +47,7 @@ func (m *DbManager) initTables() {
 }
 
 func (m *DbManager) findFutureTasks() (entities []TaskDbEntity) {
-	rows, err := m.db.Query("SELECT * FROM task WHERE date_expiration > datetime('now')")
+	rows, err := m.db.Query("SELECT * FROM task WHERE date_expiration > datetime('now') and status = $1", statusPending)
 
 	if err != nil {
 		logger.Error(`SQL error: %s`, err)
