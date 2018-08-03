@@ -2,3 +2,4 @@
 /tasks_rpg_bot/tasks_rpg_bot
 .env
 *.db
+*.sqlite
