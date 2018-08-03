@@ -163,11 +163,7 @@ func (c ListTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStru
 		}
 	}
 
-	var markup InlineKeyboardMarkupTelegramModel
-	markup.InlineKeyboard = append(markup.InlineKeyboard, InlineKeyboardButtonTelegramModel{
-		Text: `Hello, world!`,
-		Url:  `http://ukr.net`,
-	})
+	markup := c.genMarkup()
 
 	var msgOptions SendMessageOptionsStruct
 	msgOptions.Text = msg
@@ -177,7 +173,29 @@ func (c ListTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStru
 	msgOptions.ReplyMarkup = markup
 
 	return NewSendMessageWithOptions(msgOptions), nil
-	//return NewSendMessage(options.Upd.Message.Chat.Id, msg, 0), nil
+}
+
+func (c ListTaskBotCommandStruct) genMarkup() InlineKeyboardMarkupTelegramModel {
+	var markup InlineKeyboardMarkupTelegramModel
+	var item11 = InlineKeyboardButtonTelegramModel{
+		Text: `abccc`,
+		Url:  `http://ukr.net`,
+	}
+	var item21 = InlineKeyboardButtonTelegramModel{
+		Text: `Second row`,
+		Url:  `http://ukr.net/2`,
+	}
+	var itemsRow1, itemsRow2 []InlineKeyboardButtonTelegramModel
+	var rows [][]InlineKeyboardButtonTelegramModel
+
+	itemsRow1 = append(itemsRow1, item11)
+	itemsRow2 = append(itemsRow2, item21)
+
+	rows = append(rows, itemsRow1, itemsRow2)
+
+	markup.InlineKeyboard = InlineKeyboardsCollection{rows}
+
+	return markup
 }
 
 func (c ListTaskBotCommandStruct) GetName() string {

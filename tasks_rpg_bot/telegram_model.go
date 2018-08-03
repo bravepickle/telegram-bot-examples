@@ -138,33 +138,48 @@ func (k InlineKeyboardButtonTelegramModel) ToArray() map[string]interface{} {
 	return v
 }
 
+type InlineKeyboardsCollection struct {
+	// Rows ordered in the way they should be displayed
+	Rows [][]InlineKeyboardButtonTelegramModel
+}
+
+func (k InlineKeyboardsCollection) ToArray() map[string]interface{} {
+	v := make(map[string]interface{})
+
+	var rows [][]map[string]interface{}
+
+	for _, keyboards := range k.Rows {
+		var rowItems []map[string]interface{}
+
+		for _, keyboard := range keyboards {
+			rowItems = append(rowItems, keyboard.ToArray())
+		}
+
+		rows = append(rows, rowItems)
+	}
+
+	v[`rows`] = rows
+
+	return v
+}
+
 type InlineKeyboardMarkupTelegramModel struct {
-	InlineKeyboard []InlineKeyboardButtonTelegramModel
+	InlineKeyboard InlineKeyboardsCollection
 }
 
 func (k InlineKeyboardMarkupTelegramModel) ToArray() map[string]interface{} {
 	v := make(map[string]interface{})
 
-	//type Keyboards []map[string]interface{}
-
 	//var inlineKeyboards []map[string]interface{}
-	var inlineKeyboards []map[string]interface{}
-	var keyboardsCollection [][]map[string]interface{}
-
-	//v[`inline_keyboard`] = make(map[string]interface{})
-
-	//v[`inline_keyboard`] = k.InlineKeyboard.ToArray()
-
-	for _, kb := range k.InlineKeyboard {
-		//v[`inline_keyboard`] = append(v[`inline_keyboard`], kb.ToArray())
-		//v[`inline_keyboard`] = append(v[`inline_keyboard`], kb.ToArray())
-		inlineKeyboards = append(inlineKeyboards, kb.ToArray())
-	}
-
-	keyboardsCollection = append(keyboardsCollection, inlineKeyboards)
-	v[`inline_keyboard`] = keyboardsCollection
-
-	//v[`inline_keyboard`] = k.InlineKeyboard.ToArray()
+	//var keyboardsCollection [][]map[string]interface{}
+	//
+	//for _, kb := range k.InlineKeyboard {
+	//	inlineKeyboards = append(inlineKeyboards, kb.ToArray())
+	//}
+	//
+	//keyboardsCollection = append(keyboardsCollection, inlineKeyboards)
+	//v[`inline_keyboard`] = keyboardsCollection
+	v[`inline_keyboard`] = k.InlineKeyboard.ToArray()[`rows`]
 
 	return v
 }
