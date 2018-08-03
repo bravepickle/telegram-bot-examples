@@ -178,12 +178,12 @@ func (c ListTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStru
 func (c ListTaskBotCommandStruct) genMarkup() InlineKeyboardMarkupTelegramModel {
 	var markup InlineKeyboardMarkupTelegramModel
 	var item11 = InlineKeyboardButtonTelegramModel{
-		Text: `abccc`,
-		Url:  `http://ukr.net`,
+		Text:         `Edit`,
+		CallbackData: `edit`,
 	}
 	var item21 = InlineKeyboardButtonTelegramModel{
-		Text: `Second row`,
-		Url:  `http://ukr.net/2`,
+		Text:         `Delete`,
+		CallbackData: `delete`,
 	}
 	var itemsRow1, itemsRow2 []InlineKeyboardButtonTelegramModel
 	var rows [][]InlineKeyboardButtonTelegramModel
