@@ -9,6 +9,7 @@ import (
 
 const defaultEnvFile = `.env`
 const cfgAppLocale = `APP_LOCALE`
+const cfgAppJsonPretty = `APP_JSON_PRETTY`
 const cfgDbDsn = `DB_DSN`
 const cfgApiAuthKey = `API_AUTH_KEY`
 const cfgApiTimeout = `API_TIMEOUT`
@@ -31,9 +32,14 @@ func (c *AppConfigStruct) Get(param string, defaultVal string) string {
 	return defaultVal
 }
 
-// GetDbDsn get DB DSN
+// GetAppLocale get DB DSN
 func (c *AppConfigStruct) GetAppLocale() string {
 	return c.Get(cfgAppLocale, defaultLocale)
+}
+
+// GetAppJsonPretty get JSON pretty print flag
+func (c *AppConfigStruct) GetAppJsonPretty() bool {
+	return c.getBoolValue(cfgAppJsonPretty, false)
 }
 
 // GetDbDsn get DB DSN
@@ -84,6 +90,24 @@ func (c *AppConfigStruct) getIntValue(name string, defaultValue int) int {
 	}
 
 	return value
+}
+
+// getBoolValue get value of type bool routine
+func (c *AppConfigStruct) getBoolValue(name string, defaultValue bool) bool {
+	rawValue := c.Get(name, ``)
+	if rawValue == `` {
+		return defaultValue
+	}
+
+	if rawValue == `0` {
+		return false
+	}
+
+	if rawValue == `1` {
+		return true
+	}
+
+	return defaultValue
 }
 
 func NewAppConfig() *AppConfigStruct {

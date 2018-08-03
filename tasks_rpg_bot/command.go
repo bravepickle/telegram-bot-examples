@@ -27,6 +27,8 @@ func (c BotCommand) IsRunning(options RunOptionsStruct) bool {
 	return false
 }
 
+// ================== StartBotCommandStruct
+
 type StartBotCommandStruct struct {
 	BotCommand
 }
@@ -48,6 +50,8 @@ func (c StartBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct,
 func (c StartBotCommandStruct) GetName() string {
 	return `/start`
 }
+
+// ================== DefaultBotCommandStruct
 
 type DefaultBotCommandStruct struct {
 	BotCommand
@@ -80,11 +84,6 @@ type AddTaskBotCommandStruct struct {
 func (c AddTaskBotCommandStruct) GetName() string {
 	return `/add`
 }
-
-//func (c AddTaskBotCommandStruct) Init() {
-//	//logger.Debug(`!!! Init bot command %s`, c.GetName())
-//	//c.transactions = make(map[uint32]map[uint32]Transactional)
-//}
 
 func (c AddTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Transactional {
 
@@ -122,55 +121,53 @@ func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruc
 		}
 	}
 
-	//if c.initChannel() {
-	//	go c.RunChannel(options) // start channel running once
-	//}
-	//
-	//sendMessage := <- c.channel
-
 	trans := c.initTransaction(options)
-
 	if sendMessage, ok := trans.Run(options); ok {
-		//trans.Next()
-
 		if logger.DebugLevel() {
 			logger.Debug(`Transaction step data result: %s`, encodeToJson(sendMessage))
 		}
 
 		return sendMessage, nil
-
-		//return NewSendMessage(options.Upd.Message.Chat.Id,
-		//	`Adding new task. Please, enter the title`, options.Upd.Message.MessageId), nil
-
 	} else {
-		//return nil, errors.New(`Failed to run command. ` + string(encodeToJson(sendMessage)))
 		return nil, errors.New(`Failed to run command.`)
 	}
-
-	// TODO: remove return error if never used in all commands
-
-	//if c.isRunning {
-	//
-	//} else {
-	//	// TODO: implement me
-	//}
-
-	// TODO: channels pool and check transactions
-
-	//return sendMessage, nil
-	//return NewSendMessage(options.Upd.Message.Chat.Id,
-	//	`Adding new task. Please, enter the title`, options.Upd.Message.MessageId), nil
 }
 
 func (c AddTaskBotCommandStruct) IsRunning(options RunOptionsStruct) bool {
 	chatId := options.Upd.Message.Chat.Id
 	userId := options.Upd.Message.From.Id
 
-	//if trans, ok := c.transactions[chatId][userId];
-
 	_, ok := c.transactions[chatId][userId]
 
 	return ok
+}
+
+// ================== ListTaskBotCommandStruct
+
+type ListTaskBotCommandStruct struct {
+	BotCommand
+}
+
+func (c ListTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
+	logger.Debug(`Running %s command`, c.GetName())
+
+	msg := usrMsg.T(`response.task.list_header`) + "\n"
+	tasks := dbManager.findTasksByUser(int(options.Upd.Message.Chat.Id))
+
+	if len(tasks) == 0 {
+		msg += usrMsg.T(`response.task.list_item`)
+	} else {
+		for k, task := range tasks {
+			//%d. _%s_: expires at "%s", gain "%d" XP
+			msg += usrMsg.T(`response.task.list_item`, k+1, task.Title, task.DateExpiration, task.Exp) + "\n"
+		}
+	}
+
+	return NewSendMessage(options.Upd.Message.Chat.Id, msg, 0), nil
+}
+
+func (c ListTaskBotCommandStruct) GetName() string {
+	return `/list`
 }
 
 // ==================

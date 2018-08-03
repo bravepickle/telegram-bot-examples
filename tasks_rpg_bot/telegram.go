@@ -400,7 +400,12 @@ func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
 	api.routingUpdate.Init(&api)
 	api.routingSend.Init(&api)
 
-	api.commands = append(api.commands, NewStartBotCommand(), NewAddTaskBotCommand())
+	api.commands = append(
+		api.commands,
+		NewStartBotCommand(),
+		NewAddTaskBotCommand(),
+		NewListTaskBotCommand(),
+	)
 
 	return &api
 }
