@@ -223,6 +223,12 @@ func (r *TelegramBotsApiStruct) processUpdates() bool {
 		return false
 	}
 
+	// TODO: process callback query
+
+	if logger.DebugLevel() {
+		logger.Debug(`>>>>>>>> Parsed updates: %s`, encodeToJson(updates))
+	}
+
 	// TODO: edited_message handle, inline_query
 
 	for _, upd := range updates.Result {

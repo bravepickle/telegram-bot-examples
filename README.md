@@ -19,3 +19,4 @@ Telegram Bots that might help developers to work as extra tools
 * listeners for transactions - add/edit tasks in multiple steps etc.
 * use go routines and channels for each type of command to process message updates
 * messageUpdate -> fan out channels x Commands -> fan out each message entity -> fan in message entities -> fan in command Done status
+* instead of crappy solutions for SendMessageStruct and ToArray objects make a proper one with structs and JSON flags

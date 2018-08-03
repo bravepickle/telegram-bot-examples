@@ -77,8 +77,9 @@ type MessageTreeTelegramModel struct {
 }
 
 type UpdateTelegramModel struct {
-	UpdateId uint32 `json:"update_id"`
-	Message  MessageTreeTelegramModel
+	UpdateId      uint32 `json:"update_id"`
+	Message       MessageTreeTelegramModel
+	CallbackQuery CallbackQueryTelegramModel `json:"callback_query"`
 }
 
 type UpdateCollectionTelegramModel struct {
@@ -226,4 +227,11 @@ func NewSendMessageWithOptions(options SendMessageOptionsStruct) SendMessageStru
 	}
 
 	return msg
+}
+
+type CallbackQueryTelegramModel struct {
+	Id      string
+	From    UserTelegramModel
+	Message MessageTreeTelegramModel
+	Data    string
 }
