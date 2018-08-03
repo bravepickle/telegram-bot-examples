@@ -163,7 +163,21 @@ func (c ListTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStru
 		}
 	}
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, msg, 0), nil
+	var markup InlineKeyboardMarkupTelegramModel
+	markup.InlineKeyboard = append(markup.InlineKeyboard, InlineKeyboardButtonTelegramModel{
+		Text: `Hello, world!`,
+		Url:  `http://ukr.net`,
+	})
+
+	var msgOptions SendMessageOptionsStruct
+	msgOptions.Text = msg
+	msgOptions.DisableWebPagePreview = true
+	msgOptions.ChatId = int(options.Upd.Message.Chat.Id)
+	msgOptions.DisableNotification = false
+	msgOptions.ReplyMarkup = markup
+
+	return NewSendMessageWithOptions(msgOptions), nil
+	//return NewSendMessage(options.Upd.Message.Chat.Id, msg, 0), nil
 }
 
 func (c ListTaskBotCommandStruct) GetName() string {

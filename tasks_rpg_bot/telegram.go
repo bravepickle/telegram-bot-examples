@@ -343,47 +343,6 @@ func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct
 	return sendMessage, found
 }
 
-func NewSendMessage(chatId uint32, text string, replyToMsgId uint32) SendMessageStruct {
-	msg := make(SendMessageStruct)
-
-	msg[`parse_mode`] = `Markdown`
-	msg[`disable_notification`] = `true`
-	msg[`disable_web_page_preview`] = `true`
-
-	msg[`chat_id`] = strconv.FormatInt(int64(chatId), 10)
-	msg[`text`] = text
-
-	if replyToMsgId != 0 {
-		msg[`reply_to_message_id`] = replyToMsgId
-	}
-
-	return msg
-}
-
-//type SendMessageOptionsStruct struct {
-//	ChatId       int
-//	Text         string
-//	ReplyToMsgId int
-//}
-//
-//// NewSendMessageWithOptions generates send message according to input options
-//func NewSendMessageWithOptions(options SendMessageOptionsStruct) SendMessageStruct {
-//	msg := make(SendMessageStruct)
-//
-//	msg[`parse_mode`] = `Markdown`
-//	msg[`disable_notification`] = `true`
-//	msg[`disable_web_page_preview`] = `true`
-//
-//	msg[`chat_id`] = options.ChatId
-//	msg[`text`] = options.Text
-//
-//	if options.ReplyToMsgId != 0 {
-//		msg[`reply_to_message_id`] = options.ReplyToMsgId
-//	}
-//
-//	return msg
-//}
-
 /////////////////
 
 func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
