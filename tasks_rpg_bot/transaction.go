@@ -154,7 +154,7 @@ func (t *TransactionStruct) Complete(options RunOptionsStruct) (SendMessageStruc
 				t.Reset()
 				logger.Error(`Failed to save data of "%T" to DB: %s`, entity, encodeToJson(entity))
 
-				return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.save.fail`), 0), true
+				return NewSendMessage(options.ChatId(), usrMsg.T(`response.save.fail`), 0), true
 			}
 
 		default:
@@ -166,7 +166,7 @@ func (t *TransactionStruct) Complete(options RunOptionsStruct) (SendMessageStruc
 
 	t.Reset()
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
+	return NewSendMessage(options.ChatId(), text, 0), true
 }
 
 // =========== AddTaskTransactionStruct
@@ -210,5 +210,9 @@ func NewAddTaskBotCommand() (model AddTaskBotCommandStruct) {
 }
 
 func NewListTaskBotCommand() (model ListTaskBotCommandStruct) {
+	return model
+}
+
+func NewDeleteTaskBotCommand() (model DeleteTaskBotCommandStruct) {
 	return model
 }

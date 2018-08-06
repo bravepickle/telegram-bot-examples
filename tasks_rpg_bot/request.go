@@ -58,7 +58,7 @@ func (r *RequestManagerStruct) SendPostJsonRequest(uri string, data interface{})
 	body, err = ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("Response returned nok-OK status code (%d) with body: %s", resp.StatusCode, body)
+		logger.Error("Response returned error status code (%d) with body: %s", resp.StatusCode, body)
 
 		return body, false
 	}
@@ -90,7 +90,7 @@ func (r *RequestManagerStruct) SendPostRequest(uri string, payload []byte) ([]by
 	body, err = ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Error("Response returned nok-OK status code (%d) with body: %s", resp.StatusCode, body)
+		logger.Error("Response returned error status code (%d) with body: %s", resp.StatusCode, body)
 
 		return body, false
 	}

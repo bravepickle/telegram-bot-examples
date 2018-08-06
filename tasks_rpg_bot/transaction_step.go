@@ -37,7 +37,7 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageS
 		return tr.RunNextStep(options)
 	}
 
-	return NewSendMessage(options.Upd.Message.Chat.Id,
+	return NewSendMessage(options.ChatId(),
 		usrMsg.T(`request.task.title`), 0), true
 }
 
@@ -70,7 +70,7 @@ func (t ExperienceStep) Run(tr Transactional, options RunOptionsStruct) (SendMes
 		logger.Info(`Failed to validate exp value: %s`, err)
 	}
 
-	return NewSendMessage(options.Upd.Message.Chat.Id,
+	return NewSendMessage(options.ChatId(),
 		usrMsg.T(`request.task.exp`), 0), true
 }
 
@@ -100,7 +100,7 @@ func (t DateExpirationStep) Run(tr Transactional, options RunOptionsStruct) (Sen
 				if err != nil {
 					logger.Error(`Failed to parse date "%s": %s`, options.Upd.Message.Text, err)
 
-					return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.date.fail`), 0), true
+					return NewSendMessage(options.ChatId(), usrMsg.T(`response.date.fail`), 0), true
 				}
 			} else {
 				dt = dt.AddDate(time.Now().Year(), 0, 0) // append current year
@@ -120,7 +120,7 @@ func (t DateExpirationStep) Run(tr Transactional, options RunOptionsStruct) (Sen
 
 	text := usrMsg.T(`request.task.expiration`, dateFormat, dateFormatShort, answerNo)
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
+	return NewSendMessage(options.ChatId(), text, 0), true
 }
 
 func (t DateExpirationStep) Revert(tr Transactional, options RunOptionsStruct) {
@@ -218,7 +218,7 @@ func (t *ConfirmStep) Run(tr Transactional, options RunOptionsStruct) (SendMessa
 			text = usrMsg.T(`request.proceed`, yes, no)
 		}
 
-		return NewSendMessage(options.Upd.Message.Chat.Id, text, 0), true
+		return NewSendMessage(options.ChatId(), text, 0), true
 	}
 
 	if options.Upd.Message.Text == no {

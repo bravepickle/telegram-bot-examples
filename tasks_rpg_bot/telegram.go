@@ -243,35 +243,7 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 	logger.Info(`Handling update ID=%d, Message=%d`, options.Upd.UpdateId, options.Upd.Message.MessageId)
 	logger.Debug(`> %s`, options.Upd.Message.Text)
 
-	var hasProcessed = false
-
-	if len(options.Upd.Message.Entities) > 0 {
-		logger.Debug(`Processing message entities...`)
-		for _, ent := range options.Upd.Message.Entities {
-			options.Ent = ent
-			sendMessage, found := r.processMessageEntity(options)
-
-			if found {
-				hasProcessed = true
-
-				r.sendMessage(sendMessage)
-			}
-		}
-	} else {
-		for _, botCommand := range r.commands {
-			if botCommand.IsRunning(options) {
-				//// TODO: reset all running commands for user and reinit current one if newly called??
-				//found = true
-				sendMessage, err := botCommand.Run(options)
-				if err != nil {
-					logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
-				}
-
-				hasProcessed = true
-				r.sendMessage(sendMessage)
-			}
-		}
-	}
+	hasProcessed := r.processUpdate(options)
 
 	// todo: update index even if no text messages can be processed
 	// TODO: always single send-message for message+message entities?
@@ -290,6 +262,60 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 	} else {
 		r.updateOffset(options)
 	}
+}
+
+func (r *TelegramBotsApiStruct) processQueryCallback(options RunOptionsStruct) bool {
+	for _, botCommand := range r.commands {
+		if botCommand.CanProcess(options) {
+			//// TODO: reset all running commands for user and reinit current one if newly called??
+			//found = true
+			sendMessage, err := botCommand.Run(options)
+			if err != nil {
+				logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
+			}
+
+			//hasProcessed = true
+			r.sendMessage(sendMessage)
+
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *TelegramBotsApiStruct) processUpdate(options RunOptionsStruct) bool {
+	var hasProcessed = false
+
+	if len(options.Upd.Message.Entities) > 0 {
+		logger.Debug(`Processing message entities...`)
+		for _, ent := range options.Upd.Message.Entities {
+			options.Ent = ent
+			sendMessage, found := r.processMessageEntity(options)
+
+			if found {
+				hasProcessed = true
+
+				r.sendMessage(sendMessage)
+			}
+		}
+	} else {
+		for _, botCommand := range r.commands {
+			if botCommand.CanProcess(options) {
+				//// TODO: reset all running commands for user and reinit current one if newly called??
+				//found = true
+				sendMessage, err := botCommand.Run(options)
+				if err != nil {
+					logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
+				}
+
+				hasProcessed = true
+				r.sendMessage(sendMessage)
+			}
+		}
+	}
+
+	return hasProcessed
 }
 
 func (r *TelegramBotsApiStruct) updateOffset(options RunOptionsStruct) {
@@ -318,7 +344,7 @@ func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct
 		logger.Debug(`Is bot command: %s`, cmd)
 
 		for _, botCommand := range r.commands {
-			if botCommand.IsRunning(runOptions) || cmd == botCommand.GetName() {
+			if botCommand.CanProcess(runOptions) || cmd == botCommand.GetName() {
 				// TODO: reset all running commands for user and reinit current one if newly called??
 				found = true
 				sendMessage, err = botCommand.Run(runOptions)
@@ -367,6 +393,7 @@ func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
 		NewStartBotCommand(),
 		NewAddTaskBotCommand(),
 		NewListTaskBotCommand(),
+		NewDeleteTaskBotCommand(),
 	)
 
 	return &api

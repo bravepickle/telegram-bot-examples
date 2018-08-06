@@ -9,10 +9,12 @@ import (
 const emojiGlowingStar = "\U0001F31F"
 const emojiColdSweat = "\U0001F613"
 
+const callbackActionDelete = `delete`
+
 type BotCommander interface {
 	Run(options RunOptionsStruct) (SendMessageStruct, error)
 	GetName() string
-	IsRunning(options RunOptionsStruct) bool // return true if command is transactional and in process of running, e.g. waiting for user input
+	CanProcess(options RunOptionsStruct) bool // return true if command is transactional and in process of running, e.g. waiting for user input
 }
 
 type RunOptionsStruct struct {
@@ -20,10 +22,26 @@ type RunOptionsStruct struct {
 	Ent MessageEntityTelegramModel
 }
 
+func (o RunOptionsStruct) ChatId() uint32 {
+	if o.Upd.CallbackQuery.Message.Chat.Id != 0 {
+		return o.Upd.CallbackQuery.Message.Chat.Id
+	}
+
+	return o.Upd.Message.Chat.Id
+}
+
+func (o RunOptionsStruct) UserId() uint32 {
+	if o.Upd.CallbackQuery.Message.From.Id != 0 {
+		return o.Upd.CallbackQuery.Message.From.Id
+	}
+
+	return o.Upd.Message.From.Id
+}
+
 type BotCommand struct {
 }
 
-func (c BotCommand) IsRunning(options RunOptionsStruct) bool {
+func (c BotCommand) CanProcess(options RunOptionsStruct) bool {
 	return false
 }
 
@@ -44,7 +62,7 @@ func (c StartBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct,
 		}
 	}
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.welcome`), options.Upd.Message.MessageId), nil
+	return NewSendMessage(options.ChatId(), usrMsg.T(`response.welcome`), options.Upd.Message.MessageId), nil
 }
 
 func (c StartBotCommandStruct) GetName() string {
@@ -64,7 +82,7 @@ func (c DefaultBotCommandStruct) GetName() string {
 func (c DefaultBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
 	logger.Debug(`Running %s command`, c.GetName())
 
-	return NewSendMessage(options.Upd.Message.Chat.Id, usrMsg.T(`response.unrecognized`), options.Upd.Message.MessageId), nil
+	return NewSendMessage(options.ChatId(), usrMsg.T(`response.unrecognized`), options.Upd.Message.MessageId), nil
 }
 
 // ================== AddTaskBotCommandStruct
@@ -92,7 +110,7 @@ func (c AddTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Trans
 
 	//c.transactions = make(map[uint32]map[uint32]Transactional)
 
-	chatId := options.Upd.Message.Chat.Id
+	chatId := options.ChatId()
 	userId := options.Upd.Message.From.Id
 
 	if trans, ok := c.transactions[chatId][userId]; !ok { // check if set
@@ -133,8 +151,8 @@ func (c AddTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruc
 	}
 }
 
-func (c AddTaskBotCommandStruct) IsRunning(options RunOptionsStruct) bool {
-	chatId := options.Upd.Message.Chat.Id
+func (c AddTaskBotCommandStruct) CanProcess(options RunOptionsStruct) bool {
+	chatId := options.ChatId()
 	userId := options.Upd.Message.From.Id
 
 	_, ok := c.transactions[chatId][userId]
@@ -152,7 +170,7 @@ func (c ListTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStru
 	logger.Debug(`Running %s command`, c.GetName())
 
 	msg := usrMsg.T(`response.task.list_header`) + "\n"
-	tasks := dbManager.findTasksByUser(int(options.Upd.Message.Chat.Id))
+	tasks := dbManager.findTasksByUser(int(options.ChatId()))
 
 	if len(tasks) == 0 {
 		msg += usrMsg.T(`response.task.list_item`)
@@ -168,7 +186,7 @@ func (c ListTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStru
 	var msgOptions SendMessageOptionsStruct
 	msgOptions.Text = msg
 	msgOptions.DisableWebPagePreview = true
-	msgOptions.ChatId = int(options.Upd.Message.Chat.Id)
+	msgOptions.ChatId = int(options.ChatId())
 	msgOptions.DisableNotification = false
 	msgOptions.ReplyMarkup = markup
 
@@ -187,7 +205,7 @@ func (c ListTaskBotCommandStruct) genMarkup() InlineKeyboardMarkupTelegramModel 
 
 	markup.InlineKeyboard.Add(InlineKeyboardButtonTelegramModel{
 		Text:         `Delete`,
-		CallbackData: `delete`,
+		CallbackData: callbackActionDelete,
 	}, 0)
 
 	return markup
@@ -195,6 +213,52 @@ func (c ListTaskBotCommandStruct) genMarkup() InlineKeyboardMarkupTelegramModel 
 
 func (c ListTaskBotCommandStruct) GetName() string {
 	return `/list`
+}
+
+// ================== DeleteTaskBotCommandStruct
+
+type DeleteTaskBotCommandStruct struct {
+	BotCommand
+}
+
+func (c DeleteTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
+	logger.Debug(`Running %s command`, c.GetName())
+
+	return NewSendMessage(options.Upd.CallbackQuery.Message.Chat.Id, `Running delete task`, 0), nil
+	//return NewSendMessage(options.ChatId(), `Running delete task`, 0), nil
+
+	//msg := usrMsg.T(`response.task.list_header`) + "\n"
+	//tasks := dbManager.findTasksByUser(int(options.ChatId()))
+	//
+	//if len(tasks) == 0 {
+	//	msg += usrMsg.T(`response.task.list_item`)
+	//} else {
+	//	for k, task := range tasks {
+	//		//%d. _%s_: expires at "%s", gain "%d" XP
+	//		msg += usrMsg.T(`response.task.list_item`, k+1, task.Title, task.DateExpiration, task.Exp) + "\n"
+	//	}
+	//}
+	//
+	//markup := c.genMarkup()
+	//
+	//var msgOptions SendMessageOptionsStruct
+	//msgOptions.Text = msg
+	//msgOptions.DisableWebPagePreview = true
+	//msgOptions.ChatId = int(options.ChatId())
+	//msgOptions.DisableNotification = false
+	//msgOptions.ReplyMarkup = markup
+	//
+	//return NewSendMessageWithOptions(msgOptions), nil
+}
+
+func (c DeleteTaskBotCommandStruct) GetName() string {
+	return `/del`
+}
+
+// TODO: change structure of calls so that we check for command only Message and Entities are processed separately by command, if needed. Remove RunOptions.Ent in that case
+
+func (c DeleteTaskBotCommandStruct) CanProcess(options RunOptionsStruct) bool {
+	return options.Upd.CallbackQuery.Data == callbackActionDelete
 }
 
 // ==================
