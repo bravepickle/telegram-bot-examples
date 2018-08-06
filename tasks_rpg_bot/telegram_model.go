@@ -139,12 +139,30 @@ func (k InlineKeyboardButtonTelegramModel) ToArray() map[string]interface{} {
 	return v
 }
 
-type InlineKeyboardsCollection struct {
+type InlineKeyboardCollection struct {
 	// Rows ordered in the way they should be displayed
 	Rows [][]InlineKeyboardButtonTelegramModel
 }
 
-func (k InlineKeyboardsCollection) ToArray() map[string]interface{} {
+// Add adds keyboard button to collection to specified row starting from 0
+func (k *InlineKeyboardCollection) Add(button InlineKeyboardButtonTelegramModel, rowNum int) {
+	var diffRows = rowNum + 1 - len(k.Rows)
+
+	// init rows if not set yet
+	if diffRows > 0 {
+		//[][]map[string]interface{}
+
+		for i := 0; i < diffRows; i += 1 {
+			var row []InlineKeyboardButtonTelegramModel
+
+			k.Rows = append(k.Rows, row)
+		}
+	}
+
+	k.Rows[rowNum] = append(k.Rows[rowNum], button)
+}
+
+func (k InlineKeyboardCollection) ToArray() map[string]interface{} {
 	v := make(map[string]interface{})
 
 	var rows [][]map[string]interface{}
@@ -152,8 +170,13 @@ func (k InlineKeyboardsCollection) ToArray() map[string]interface{} {
 	for _, keyboards := range k.Rows {
 		var rowItems []map[string]interface{}
 
-		for _, keyboard := range keyboards {
-			rowItems = append(rowItems, keyboard.ToArray())
+		if len(keyboards) == 0 {
+			//rowItems = make([]map[string]interface{}, 0) // init empty array
+			continue // skip empty rows because they won't affect resulting view. Otherwise uncomment previous line
+		} else {
+			for _, keyboard := range keyboards {
+				rowItems = append(rowItems, keyboard.ToArray())
+			}
 		}
 
 		rows = append(rows, rowItems)
@@ -165,21 +188,11 @@ func (k InlineKeyboardsCollection) ToArray() map[string]interface{} {
 }
 
 type InlineKeyboardMarkupTelegramModel struct {
-	InlineKeyboard InlineKeyboardsCollection
+	InlineKeyboard InlineKeyboardCollection
 }
 
 func (k InlineKeyboardMarkupTelegramModel) ToArray() map[string]interface{} {
 	v := make(map[string]interface{})
-
-	//var inlineKeyboards []map[string]interface{}
-	//var keyboardsCollection [][]map[string]interface{}
-	//
-	//for _, kb := range k.InlineKeyboard {
-	//	inlineKeyboards = append(inlineKeyboards, kb.ToArray())
-	//}
-	//
-	//keyboardsCollection = append(keyboardsCollection, inlineKeyboards)
-	//v[`inline_keyboard`] = keyboardsCollection
 	v[`inline_keyboard`] = k.InlineKeyboard.ToArray()[`rows`]
 
 	return v
