@@ -13,9 +13,6 @@ import (
 // TODO: when logging add prefix of each controller
 // TODO: before handling each response spawn different channel to avoid waiting for processing completion
 
-// apiBaseUri base address for Telegram Bots API
-const apiBaseUri = `https://api.telegram.org/bot`
-
 /////////////////
 
 type TelegramBotsApiRequestModel struct {
@@ -355,7 +352,7 @@ func NewTelegramBotsApi(authKey string, sleep int) *TelegramBotsApiStruct {
 	var requestManager RequestManagerStruct
 
 	api := TelegramBotsApiStruct{
-		BaseUri:        apiBaseUri,
+		BaseUri:        appConfig.GetApiBaseUri(),
 		RequestManager: &requestManager,
 		AuthKey:        authKey,
 		Sleep:          sleep,

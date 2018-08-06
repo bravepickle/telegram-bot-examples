@@ -7,18 +7,20 @@ import (
 	"strconv"
 )
 
-const defaultEnvFile = `.env`
 const cfgAppLocale = `APP_LOCALE`
 const cfgAppJsonPretty = `APP_JSON_PRETTY`
 const cfgDbDsn = `DB_DSN`
 const cfgApiAuthKey = `API_AUTH_KEY`
+const cfgApiBaseUri = `API_BASE_URI`
 const cfgApiTimeout = `API_TIMEOUT`
 const cfgApiUpdatesInterval = `API_UPDATES_INTERVAL`
 const cfgApiRemindInterval = `API_REMIND_INTERVAL`
 
+const defaultEnvFile = `.env`
 const defaultApiRemindIntervalHr = 24   // in hours
 const defaultApiUpdatesIntervalSec = 10 // in seconds
 const defaultResponseTimeout = 5        // in seconds
+const defaultApiBaseUri = `https://api.telegram.org/bot`
 
 type AppConfigStruct struct {
 	params map[string]string
@@ -45,6 +47,11 @@ func (c *AppConfigStruct) GetAppJsonPretty() bool {
 // GetDbDsn get DB DSN
 func (c *AppConfigStruct) GetDbDsn() string {
 	return c.Get(cfgDbDsn, ``)
+}
+
+// GetApiBaseUri get Telegram Bot API base URI
+func (c *AppConfigStruct) GetApiBaseUri() string {
+	return c.Get(cfgApiBaseUri, defaultApiBaseUri)
 }
 
 // GetApiTimeout get Telegram Bot API secret
