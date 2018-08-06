@@ -150,8 +150,6 @@ func (k *InlineKeyboardCollection) Add(button InlineKeyboardButtonTelegramModel,
 
 	// init rows if not set yet
 	if diffRows > 0 {
-		//[][]map[string]interface{}
-
 		for i := 0; i < diffRows; i += 1 {
 			var row []InlineKeyboardButtonTelegramModel
 
