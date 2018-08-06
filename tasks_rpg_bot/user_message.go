@@ -54,6 +54,7 @@ func NewUserMessage(locale string) *UserMessage {
 		`response.task.list_item`:   `%d. _%s_: expires at "%s", gain "%d" XP`,
 
 		`request.proceed`:         `*Proceed?* %s/%s`,
+		`request.task.id`:         `Please, enter ID for the task`,
 		`request.task.title`:      `Please, enter title for the task`,
 		`request.task.exp`:        `Please, enter amount of experience gained for the completion task`,
 		`request.task.expiration`: `Please, enter expiration date for the task (formats: "%s", "%s") or write "%s"`,
@@ -77,6 +78,7 @@ func NewUserMessage(locale string) *UserMessage {
 		`response.task.list_item`:   `%d. _%s_: сделаешь до "%s", получишь "%d" опыта`,
 
 		`request.proceed`:         `*Продолжить?* %s/%s`,
+		`request.task.id`:         `Введите ID задачи`,
 		`request.task.title`:      `Введите загловок`,
 		`request.task.exp`:        `Введите количество опыта полученное за выполнение задачи`,
 		`request.task.expiration`: `Введите конечную дату для выполнения задачи (форматы: "%s", "%s") или напишите "%s"`,

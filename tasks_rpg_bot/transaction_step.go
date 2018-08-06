@@ -13,14 +13,97 @@ type TransactionalStep interface {
 	//Set(name string, value interface{}) // set value for the step
 }
 
-// =========== TitleStep
-type TitleStep struct{}
+// =========== TaskIdStep
+type TaskIdStep struct{}
 
-func (t TitleStep) GetName() string {
+func (t TaskIdStep) GetName() string {
+	return `id`
+}
+
+func (t TaskIdStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
+	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
+		task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+
+		var err error
+		if task.Id, err = strconv.Atoi(options.Upd.Message.Text); err != nil {
+			logger.Error(`Failed to parse task ID: %s`, err)
+		}
+
+		tr.SetDataValue(`task`, task)
+
+		return tr.RunNextStep(options)
+	}
+
+	//if options.Ent.Length > 0 && len(options.Upd.Message.Text) > options.Ent.Length {
+	//	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	//	task.Title = options.Upd.Message.Text[options.Ent.Length+1:]
+	//	tr.SetDataValue(`task`, task)
+	//
+	//	return tr.RunNextStep(options)
+	//}
+
+	return NewSendMessage(options.ChatId(),
+		usrMsg.T(`request.task.id`), 0), true
+}
+
+func (t TaskIdStep) Revert(tr Transactional, options RunOptionsStruct) {
+	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	task.Title = ``
+	tr.SetDataValue(`task`, task)
+}
+
+// =========== ReadTaskDefaultStep
+type ReadTaskDefaultStep struct{}
+
+func (t ReadTaskDefaultStep) GetName() string {
+	return `task-read`
+}
+
+func (t ReadTaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
+	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+
+	if task.Id != 0 {
+		foundTask := dbManager.findTaskById(task.Id)
+
+		if foundTask != nil {
+			tr.SetDataValue(`task`, foundTask)
+
+			logger.Info(` >>>>>>>>>>>>>>>>>>>>> Found task: %s`, encodeToJson(*foundTask))
+
+			tr.SetDataValue(`message_text_prepend`, `Found task: `+string(encodeToJson(*foundTask)))
+
+		} else {
+			logger.Error(`TODO: handle empty task ID or not found entity`)
+		}
+	} else {
+		// TODO: handle empty task ID or not found entity
+		logger.Error(`TODO: handle empty task ID or not found entity`)
+	}
+
+	//task.UserId = int(options.Upd.Message.From.Id)
+	//task.Status = statusPending
+	//task.DateUpdated = NewDbTime(time.Now())
+	//task.DateCreated = NewDbTime(time.Now())
+	//tr.SetDataValue(`task`, task)
+
+	return tr.RunNextStep(options)
+}
+
+func (t ReadTaskDefaultStep) Revert(tr Transactional, options RunOptionsStruct) {
+	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
+	task.UserId = 0
+	task.Status = ``
+	tr.SetDataValue(`task`, task)
+}
+
+// =========== TaskTitleStep
+type TaskTitleStep struct{}
+
+func (t TaskTitleStep) GetName() string {
 	return `title`
 }
 
-func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
+func (t TaskTitleStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
 	if options.Upd.Message.Entities == nil && options.Upd.Message.Text != `` {
 		task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
 		task.Title = options.Upd.Message.Text
@@ -41,7 +124,7 @@ func (t TitleStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageS
 		usrMsg.T(`request.task.title`), 0), true
 }
 
-func (t TitleStep) Revert(tr Transactional, options RunOptionsStruct) {
+func (t TaskTitleStep) Revert(tr Transactional, options RunOptionsStruct) {
 	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
 	task.Title = ``
 	tr.SetDataValue(`task`, task)
@@ -129,14 +212,14 @@ func (t DateExpirationStep) Revert(tr Transactional, options RunOptionsStruct) {
 	//tr.SetDataValue(`task`, task)
 }
 
-// =========== TaskDefaultStep
-type TaskDefaultStep struct{}
+// =========== AddTaskDefaultStep
+type AddTaskDefaultStep struct{}
 
-func (t TaskDefaultStep) GetName() string {
+func (t AddTaskDefaultStep) GetName() string {
 	return `task-default`
 }
 
-func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
+func (t AddTaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (SendMessageStruct, bool) {
 	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
 	task.UserId = int(options.Upd.Message.From.Id)
 	task.Status = statusPending
@@ -147,7 +230,7 @@ func (t TaskDefaultStep) Run(tr Transactional, options RunOptionsStruct) (SendMe
 	return tr.RunNextStep(options)
 }
 
-func (t TaskDefaultStep) Revert(tr Transactional, options RunOptionsStruct) {
+func (t AddTaskDefaultStep) Revert(tr Transactional, options RunOptionsStruct) {
 	task := tr.GetDataValue(`task`, &TaskDbEntity{}).(*TaskDbEntity)
 	task.UserId = 0
 	task.Status = ``

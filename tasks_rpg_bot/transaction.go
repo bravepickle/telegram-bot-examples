@@ -182,10 +182,32 @@ func (t *AddTaskTransactionStruct) Init() {
 	logger.Debug(`>>>>>>>>>>> Init task "%s"`, t.GetName())
 	t.Reset()
 
-	t.steps = append(t.steps, &TitleStep{})
+	t.steps = append(t.steps, &TaskTitleStep{})
 	t.steps = append(t.steps, &ExperienceStep{})
 	t.steps = append(t.steps, &DateExpirationStep{})
-	t.steps = append(t.steps, &TaskDefaultStep{})
+	t.steps = append(t.steps, &AddTaskDefaultStep{})
+	t.steps = append(t.steps, &SummaryStep{}) // TODO: add mapping for fields or use toString in steps to convert
+	t.steps = append(t.steps, &ConfirmStep{})
+}
+
+// =========== DeleteTaskTransactionStruct
+type DeleteTaskTransactionStruct struct {
+	TransactionStruct
+
+	steps []TransactionalStep
+}
+
+func (t *DeleteTaskTransactionStruct) GetName() string {
+	return `add-task`
+}
+
+func (t *DeleteTaskTransactionStruct) Init() {
+	logger.Debug(`>>>>>>>>>>> Init task "%s"`, t.GetName())
+	t.Reset()
+
+	t.steps = append(t.steps, &TaskIdStep{})
+	t.steps = append(t.steps, &ReadTaskDefaultStep{})
+	//t.steps = append(t.steps, &AddTaskDefaultStep{})
 	t.steps = append(t.steps, &SummaryStep{}) // TODO: add mapping for fields or use toString in steps to convert
 	t.steps = append(t.steps, &ConfirmStep{})
 }

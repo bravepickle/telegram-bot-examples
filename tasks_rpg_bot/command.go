@@ -38,6 +38,10 @@ func (o RunOptionsStruct) UserId() uint32 {
 	return o.Upd.Message.From.Id
 }
 
+func (o RunOptionsStruct) isCallbackQuery() bool {
+	return o.Upd.CallbackQuery.Id != ``
+}
+
 type BotCommand struct {
 }
 
@@ -224,32 +228,16 @@ type DeleteTaskBotCommandStruct struct {
 func (c DeleteTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
 	logger.Debug(`Running %s command`, c.GetName())
 
-	return NewSendMessage(options.Upd.CallbackQuery.Message.Chat.Id, `Running delete task`, 0), nil
-	//return NewSendMessage(options.ChatId(), `Running delete task`, 0), nil
-
-	//msg := usrMsg.T(`response.task.list_header`) + "\n"
-	//tasks := dbManager.findTasksByUser(int(options.ChatId()))
-	//
-	//if len(tasks) == 0 {
-	//	msg += usrMsg.T(`response.task.list_item`)
-	//} else {
-	//	for k, task := range tasks {
-	//		//%d. _%s_: expires at "%s", gain "%d" XP
-	//		msg += usrMsg.T(`response.task.list_item`, k+1, task.Title, task.DateExpiration, task.Exp) + "\n"
-	//	}
+	//if options.isCallbackQuery() {
+	//	return c.processCallbackQuery()
 	//}
-	//
-	//markup := c.genMarkup()
-	//
-	//var msgOptions SendMessageOptionsStruct
-	//msgOptions.Text = msg
-	//msgOptions.DisableWebPagePreview = true
-	//msgOptions.ChatId = int(options.ChatId())
-	//msgOptions.DisableNotification = false
-	//msgOptions.ReplyMarkup = markup
-	//
-	//return NewSendMessageWithOptions(msgOptions), nil
+
+	return NewSendMessage(options.Upd.CallbackQuery.Message.Chat.Id, `Running delete task`, 0), nil
 }
+
+//func (c *DeleteTaskBotCommandStruct) processCallbackQuery() (SendMessageStruct, error) {
+//
+//}
 
 func (c DeleteTaskBotCommandStruct) GetName() string {
 	return `/del`

@@ -118,6 +118,28 @@ func (m *DbManager) findTasksByUser(userId int) (entities []TaskDbEntity) {
 	return entities
 }
 
+func (m *DbManager) findTaskById(id int) *TaskDbEntity {
+	rows, err := m.db.Query("SELECT * FROM task WHERE id = $1", id)
+	if err != nil {
+		logger.Error(`SQL error: %s`, err)
+	}
+
+	for rows.Next() {
+		var taskEntity TaskDbEntity
+		err = taskEntity.Load(rows)
+
+		if err != nil {
+			logger.Info(`SQL error data load: %s`, err)
+
+			return nil
+		}
+
+		return &taskEntity
+	}
+
+	return nil
+}
+
 func NewDbManager(dsn string) *DbManager {
 	var manager DbManager
 
