@@ -42,7 +42,7 @@ func (o RunOptionsStruct) isCallbackQuery() bool {
 	return o.Upd.CallbackQuery.Id != ``
 }
 
-type BotCommand struct {}
+type BotCommand struct{}
 
 func (c BotCommand) CanProcess(options RunOptionsStruct) bool {
 	return false
@@ -237,7 +237,7 @@ func (c DeleteTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageSt
 }
 
 func (c *DeleteTaskBotCommandStruct) processCallbackQuery(options RunOptionsStruct) (SendMessageStruct, error) {
-	task := c.
+	//task := c.
 }
 
 func (c DeleteTaskBotCommandStruct) GetName() string {
@@ -249,7 +249,6 @@ func (c DeleteTaskBotCommandStruct) GetName() string {
 func (c DeleteTaskBotCommandStruct) CanProcess(options RunOptionsStruct) bool {
 	return options.Upd.CallbackQuery.Data == callbackActionDelete
 }
-
 
 func (c DeleteTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Transactional {
 	chatId := options.ChatId()
