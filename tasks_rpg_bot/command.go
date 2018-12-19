@@ -42,8 +42,7 @@ func (o RunOptionsStruct) isCallbackQuery() bool {
 	return o.Upd.CallbackQuery.Id != ``
 }
 
-type BotCommand struct {
-}
+type BotCommand struct {}
 
 func (c BotCommand) CanProcess(options RunOptionsStruct) bool {
 	return false
@@ -223,21 +222,23 @@ func (c ListTaskBotCommandStruct) GetName() string {
 
 type DeleteTaskBotCommandStruct struct {
 	BotCommand
+
+	transactions map[uint32]map[uint32]Transactional
 }
 
 func (c DeleteTaskBotCommandStruct) Run(options RunOptionsStruct) (SendMessageStruct, error) {
 	logger.Debug(`Running %s command`, c.GetName())
 
-	//if options.isCallbackQuery() {
-	//	return c.processCallbackQuery()
-	//}
+	if options.isCallbackQuery() {
+		return c.processCallbackQuery(options)
+	}
 
-	return NewSendMessage(options.Upd.CallbackQuery.Message.Chat.Id, `Running delete task`, 0), nil
+	return NewSendMessage(options.ChatId(), `TBD: Running delete task start - enter task ID`, 0), nil
 }
 
-//func (c *DeleteTaskBotCommandStruct) processCallbackQuery() (SendMessageStruct, error) {
-//
-//}
+func (c *DeleteTaskBotCommandStruct) processCallbackQuery(options RunOptionsStruct) (SendMessageStruct, error) {
+	task := c.
+}
 
 func (c DeleteTaskBotCommandStruct) GetName() string {
 	return `/del`
@@ -247,6 +248,30 @@ func (c DeleteTaskBotCommandStruct) GetName() string {
 
 func (c DeleteTaskBotCommandStruct) CanProcess(options RunOptionsStruct) bool {
 	return options.Upd.CallbackQuery.Data == callbackActionDelete
+}
+
+
+func (c DeleteTaskBotCommandStruct) initTransaction(options RunOptionsStruct) Transactional {
+	chatId := options.ChatId()
+	userId := options.Upd.Message.From.Id
+
+	if trans, ok := c.transactions[chatId][userId]; !ok { // check if set
+		if _, ok := c.transactions[chatId]; !ok {
+			c.transactions[chatId] = make(map[uint32]Transactional)
+		}
+
+		//c.transactions[chatId] := make()
+
+		c.transactions[chatId][userId] = NewAddTaskTransaction()
+
+		return c.transactions[chatId][userId]
+	} else {
+		return trans
+	}
+}
+
+func NewDeleteTaskBotCommand() (model DeleteTaskBotCommandStruct) {
+	return model
 }
 
 // ==================

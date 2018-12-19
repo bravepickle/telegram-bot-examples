@@ -234,7 +234,3 @@ func NewAddTaskBotCommand() (model AddTaskBotCommandStruct) {
 func NewListTaskBotCommand() (model ListTaskBotCommandStruct) {
 	return model
 }
-
-func NewDeleteTaskBotCommand() (model DeleteTaskBotCommandStruct) {
-	return model
-}

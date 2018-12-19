@@ -101,7 +101,7 @@ type TelegramBotsApiStruct struct {
 	routingUpdate UpdateRequestModel
 	routingSend   SendMessageRequestModel
 
-	//commands []BotCommand
+	//command []BotCommand
 	commands []BotCommander
 
 	commandDefault DefaultBotCommandStruct
@@ -267,7 +267,7 @@ func (r *TelegramBotsApiStruct) processSingleUpdate(options RunOptionsStruct) {
 func (r *TelegramBotsApiStruct) processQueryCallback(options RunOptionsStruct) bool {
 	for _, botCommand := range r.commands {
 		if botCommand.CanProcess(options) {
-			//// TODO: reset all running commands for user and reinit current one if newly called??
+			//// TODO: reset all running command for user and reinit current one if newly called??
 			//found = true
 			sendMessage, err := botCommand.Run(options)
 			if err != nil {
@@ -302,8 +302,7 @@ func (r *TelegramBotsApiStruct) processUpdate(options RunOptionsStruct) bool {
 	} else {
 		for _, botCommand := range r.commands {
 			if botCommand.CanProcess(options) {
-				//// TODO: reset all running commands for user and reinit current one if newly called??
-				//found = true
+				//// TODO: reset all running command for user and reinit current one if newly called??
 				sendMessage, err := botCommand.Run(options)
 				if err != nil {
 					logger.Fatal(`Command run "%s" failed: %s`, botCommand.GetName(), err)
@@ -345,7 +344,7 @@ func (r *TelegramBotsApiStruct) processMessageEntity(runOptions RunOptionsStruct
 
 		for _, botCommand := range r.commands {
 			if botCommand.CanProcess(runOptions) || cmd == botCommand.GetName() {
-				// TODO: reset all running commands for user and reinit current one if newly called??
+				// TODO: reset all running command for user and reinit current one if newly called??
 				found = true
 				sendMessage, err = botCommand.Run(runOptions)
 				if err != nil {
