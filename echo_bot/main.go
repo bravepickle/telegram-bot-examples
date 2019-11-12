@@ -33,6 +33,8 @@ var botProfile struct {
 	}
 }
 
+var aliases map[string]string
+
 func getUpdatesUrl() string {
 	return apiBaseUri + AuthKey + `/getUpdates?timeout=` + strconv.Itoa(responseTimeout) + `&offset=` + strconv.FormatInt(int64(updatesOffset), 10)
 }
@@ -158,30 +160,43 @@ func processUpdates() bool {
 				case `/time`:
 					text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
 				case `/code`:
-					// log.Println(`>>> "`+upd.Message.Text+`"`, ent.Offset+ent.Length+1, ent)
 					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
-						text = `No input...`
+						text = `*ERROR:* No input...`
 					} else {
 						text = strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
 						text = "```\n" + text + "\n```"
 					}
-
-					// text = `*Bot time:* ` + time.Now().Format("2006-01-02 15:04:05")
 				case `/sh`:
 					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
-						text = `No command passed...`
+						text = `*ERROR:* No input...`
 					} else {
 						query := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
-						text = "```\n$ " + query + "\n"
 
-						cmd := exec.Command(`/bin/bash`, `-c`, query)
-						cmd.Env = os.Environ()
-						out, err := cmd.Output()
-						if err != nil {
-							out = []byte(`ERROR: ` + err.Error())
+						if aliasQuery, ok := aliases[query]; ok {
+							text = execQuery(aliasQuery)
+						} else {
+							text = execQuery(query)
 						}
 
-						text += "\n" + string(out) + "\n```"
+					}
+
+				case `/alias`:
+					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
+						text = "*Aliases:*\n"
+
+						for k, v := range aliases {
+							text += fmt.Sprintf(`  %s = %s`, k, v)
+							//text += ` `, k, "=", v)
+						}
+
+					} else {
+						aliasKey := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
+
+						if query, ok := aliases[aliasKey]; ok {
+							text = execQuery(query)
+						} else {
+							text = fmt.Sprintf(`*ERROR:* Unknown alias "%s"...`, aliasKey)
+						}
 					}
 
 				default:
@@ -209,15 +224,27 @@ func processUpdates() bool {
 		}
 
 		sentOnceSuccessfully = true
-
 		if upd.UpdateId >= updatesOffset {
-			log.Printf(" --------- Was offset %d, will be: %d\n", updatesOffset, upd.UpdateId+1)
 			updatesOffset = upd.UpdateId + 1
-
 		}
 	}
 
 	return sentOnceSuccessfully
+}
+
+func execQuery(query string) string {
+	text := "```\n$ " + query + "\n"
+
+	cmd := exec.Command(`/bin/bash`, `-c`, query)
+	cmd.Env = os.Environ()
+	out, err := cmd.Output()
+	if err != nil {
+		out = []byte(`ERROR: ` + err.Error())
+	}
+
+	text += "\n" + string(out) + "\n```"
+
+	return text
 }
 
 func processRequests() {
@@ -246,7 +273,10 @@ func processRequests() {
 var debug bool
 
 func main() {
+	var aliasesPath string
+
 	flag.BoolVar(&debug, `debug`, false, `Enable debug mode`)
+	flag.StringVar(&aliasesPath, `aliases`, ``, `File with the list of supported aliases in JSON format as key-values`)
 	flag.Parse()
 
 	if debug {
@@ -260,9 +290,39 @@ func main() {
 		os.Exit(1)
 	}
 
+	if aliasesPath != `` {
+		_, err := os.Stat(aliasesPath)
+		if os.IsNotExist(err) {
+			log.Printf(`Path with aliases "%s" could not be found.`, aliasesPath)
+			os.Exit(1)
+		}
+
+		aliasesContents, err := ioutil.ReadFile(aliasesPath)
+
+		if err != nil {
+			log.Printf("Error appeared during reading file: %s\n", aliasesPath)
+			os.Exit(1)
+		}
+
+		if err = json.Unmarshal(aliasesContents, &aliases); err != nil {
+			log.Printf("Error parsing JSON file \"%s\": %s\n", aliasesPath, err)
+
+			os.Exit(1)
+		}
+	}
+
 	AuthKey = flag.Arg(0)
 	log.Println(`Echo bot started at`, time.Now().Format("2006-01-02 15:04:05"))
 	log.Println(`Used auth key:`, AuthKey)
+	log.Println(`Aliases path:`, aliasesPath)
+
+	if debug {
+		log.Println(`Aliases:`)
+
+		for k, v := range aliases {
+			log.Println(` `, k, "=", v)
+		}
+	}
 
 	if checkConnection() {
 		processRequests()

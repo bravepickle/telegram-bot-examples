@@ -47,8 +47,8 @@ type messageStruct struct {
 	MessageId uint32 `json:"message_id"`
 	From      userStruct
 	Chat      chatStruct
-	Date      uint32                `json:"date"`
-	Text      string                `json:"text"`
+	Date      uint32 `json:"date"`
+	Text      string `json:"text"`
 	Entities  []messageEntityStruct `json:"entities"`
 }
 
@@ -64,7 +64,7 @@ type updatesPayloadStruct struct {
 
 type sendMessageStruct map[string]string
 
-func NewSendMessage(chatId uint32, text string /*, replyToMsgId uint32*/) sendMessageStruct {
+func NewSendMessage(chatId uint32, text string/*, replyToMsgId uint32*/) sendMessageStruct {
 	msg := make(sendMessageStruct)
 
 	msg[`parse_mode`] = `Markdown`
