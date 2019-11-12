@@ -198,7 +198,9 @@ func processUpdates() bool {
 						aliasKey := strings.TrimSpace(upd.Message.Text[ent.Offset+ent.Length+1:])
 
 						if query, ok := aliases[aliasKey]; ok {
-							text = execQuery(query)
+							text += "```\n"
+							text += fmt.Sprintf("%s: %s\n", aliasKey, query)
+							text += "\n```"
 						} else {
 							text = fmt.Sprintf(`*ERROR:* Unknown alias "%s"...`, aliasKey)
 						}
