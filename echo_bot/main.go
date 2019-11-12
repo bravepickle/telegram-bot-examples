@@ -184,9 +184,14 @@ func processUpdates() bool {
 					if len(upd.Message.Text) <= ent.Offset+ent.Length+1 {
 						text = "*Aliases:*\n"
 
-						for k, v := range aliases {
-							text += fmt.Sprintf(`  %s = %s`, k, v)
-							//text += ` `, k, "=", v)
+						if len(aliases) > 0 {
+							text += "```\n"
+							for k, v := range aliases {
+								text += fmt.Sprintf("%s: %s\n", k, v)
+							}
+							text += "\n```"
+						} else {
+							text += `None`
 						}
 
 					} else {
