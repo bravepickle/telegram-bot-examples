@@ -245,11 +245,14 @@ func execQuery(query string) string {
 	cmd := exec.Command(`/bin/bash`, `-c`, query)
 	cmd.Env = os.Environ()
 	out, err := cmd.Output()
+	
+	text += "\n" + string(out)
+
 	if err != nil {
-		out = []byte(`ERROR: ` + err.Error())
+		text += "\nERROR: " + err.Error()
 	}
 
-	text += "\n" + string(out) + "\n```"
+	text += "\n```"
 
 	return text
 }
